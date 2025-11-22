@@ -1,10 +1,8 @@
-using Domain.Common;
 using Domain.ContentItems;
 using Domain.ContentTypes;
 using Domain.Fields;
 using Domain.Fields.Transformers;
 using Domain.Fields.Validations;
-using Moq;
 using Xunit;
 
 namespace Domain.Tests.ContentItems;
@@ -19,7 +17,7 @@ public class ContentItemSetFieldValueTests
     {
         // Arrange
         var fieldId = Guid.NewGuid();
-        var testField = new Field(fieldId, FieldTypes.TEXT, "TestField", false, [], []);
+        var testField = new Field(fieldId, FieldTypes.Text, "TestField", false, [], []);
         var contentType = new ContentType(Guid.NewGuid(), "TestContentType", [testField]);
         var initialValues = new Dictionary<Guid, ContentFieldValue>
         {
@@ -46,7 +44,7 @@ public class ContentItemSetFieldValueTests
         var fieldId = Guid.NewGuid();
         var testField = new Field(
             fieldId,
-            FieldTypes.TEXT,
+            FieldTypes.Text,
             "TestField",
             false,
             [],
@@ -78,7 +76,7 @@ public class ContentItemSetFieldValueTests
         var fieldId = Guid.NewGuid();
         var testField = new Field(
             fieldId,
-            FieldTypes.TEXT,
+            FieldTypes.Text,
             "TestField",
             false,
             [new IsLowercaseRule()],
@@ -110,7 +108,7 @@ public class ContentItemSetFieldValueTests
         var fieldId = Guid.NewGuid();
         var testField = new Field(
             fieldId,
-            FieldTypes.TEXT,
+            FieldTypes.Text,
             "TestField",
             false,
             [new IsLowercaseRule()],
@@ -143,7 +141,7 @@ public class ContentItemSetFieldValueTests
         var fieldId = Guid.NewGuid();
         var testField = new Field(
             fieldId,
-            FieldTypes.TEXT,
+            FieldTypes.Text,
             "TestField",
             false,
             [new IsLowercaseRule()],
@@ -164,7 +162,7 @@ public class ContentItemSetFieldValueTests
     {
         // Arrange
         var fieldId = Guid.NewGuid();
-        var testField = new Field(fieldId, FieldTypes.TEXT, "TestField", false, [], []);
+        var testField = new Field(fieldId, FieldTypes.Text, "TestField", false, [], []);
         var contentType = new ContentType(Guid.NewGuid(), "TestContentType", [testField]);
 
         var initialValues = new Dictionary<Guid, ContentFieldValue>

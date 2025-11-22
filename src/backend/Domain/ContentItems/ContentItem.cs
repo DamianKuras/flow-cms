@@ -24,7 +24,7 @@ public class ContentItem(
 
     public ContentType ContentType { get; } = content_type;
 
-    public ContentItemStatus Status { get; } = ContentItemStatus.DRAFT;
+    public ContentItemStatus Status { get; } = ContentItemStatus.Draft;
     private readonly Dictionary<Guid, ContentFieldValue> _values = values;
 
     public IReadOnlyDictionary<Guid, ContentFieldValue> Values =>

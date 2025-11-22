@@ -31,7 +31,9 @@ public class Result
     public static Result Failure(params Error[] errors)
     {
         if (errors is null || errors.Length == 0)
-            throw new ArgumentException("At least one error must be provided for failure.");
+            throw new ArgumentException(
+                "At least one error must be provided for failure."
+            );
 
         return new Result(false, errors);
     }
@@ -39,7 +41,8 @@ public class Result
     /// <summary>
     /// Creates a failed result with the specified error.
     /// </summary>
-    public static Result Failure(IEnumerable<Error> errors) => Failure(errors.ToArray());
+    public static Result Failure(IEnumerable<Error> errors) =>
+        Failure(errors.ToArray());
 }
 
 /// <summary>
@@ -83,7 +86,9 @@ public class Result<T>
     public static Result<T> Failure(params Error[] errors)
     {
         if (errors is null || errors.Length == 0)
-            throw new ArgumentException("At least one error must be provided for failure.");
+            throw new ArgumentException(
+                "At least one error must be provided for failure."
+            );
 
         return new(false, errors);
     }
@@ -91,7 +96,8 @@ public class Result<T>
     /// <summary>
     /// Creates a failed result with the specified error.
     /// </summary>
-    public static Result<T> Failure(IEnumerable<Error> errors) => Failure(errors.ToArray());
+    public static Result<T> Failure(IEnumerable<Error> errors) =>
+        Failure(errors.ToArray());
 
     /// <summary>
     /// Pattern matching helper that returns the result of one of two functions.
@@ -133,5 +139,6 @@ public sealed class ValidationResult(string FieldName)
     /// Adds multiple validation error messages for this field.
     /// </summary>
     /// <param name="errors"> The collection of error messages to add.</param>
-    public void AddErrors(IEnumerable<string> errors) => ValidationErrors.AddRange(errors);
+    public void AddErrors(IEnumerable<string> errors) =>
+        ValidationErrors.AddRange(errors);
 }

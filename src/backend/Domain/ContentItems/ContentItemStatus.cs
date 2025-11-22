@@ -5,11 +5,11 @@ namespace Domain.ContentItems;
 /// </summary>
 public enum ContentItemStatus
 {
-    ARCHIVE,
-    DRAFT,
-    PUBLISHED,
-    IN_REVIEW,
-    SCHEDULED,
-    REJECTED,
-    DELETED,
+    Archive,
+    Draft,
+    Published,
+    InReview,
+    Scheduled,
+    Rejected,
+    Deleted,
 }
