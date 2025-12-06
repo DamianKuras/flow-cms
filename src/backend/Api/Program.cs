@@ -1,17 +1,34 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Api.Endpoints;
+using Application.ContentTypes;
 using Application.Interfaces;
 using Application.Schemas;
 using Infrastructure;
+using Infrastructure.Validation;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddInfrastructure(builder.Configuration);
 
-builder.Services.AddScoped<ICommandHandler<CreateSchemaCommand, Guid>, CreateSchemaHandler>();
-builder.Services.AddScoped<IQueryHandler<GetSchemaByIdQuery, SchemaDto>, GetSchemaByIdHandler>();
 builder.Services.AddScoped<
-    IQueryHandler<GetSchemasQuery, List<SchemaListItemDto>>,
-    GetSchemasHandler
+    IQueryHandler<GetContentTypesQuery, List<ContentTypeListDto>>,
+    GetContentTypesHandler
+>();
+
+builder.Services.AddScoped<
+    IQueryHandler<GetContentTypeQuery, ContentTypeDto>,
+    GetContentTypeHandler
+>();
+
+builder.Services.AddScoped<
+    ICommandHandler<CreateContentTypeCommand, Guid>,
+    CreateContentTypeCommandHandler
+>();
+
+builder.Services.AddScoped<
+    ICommandHandler<DeleteContentTypeCommand, Guid>,
+    DeleteContentType
 >();
 
 builder.Services.AddOpenApi();
@@ -25,6 +42,15 @@ builder.Services.AddCors(options =>
         {
             builder.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
         }
+    );
+});
+
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    options.SerializerOptions.WriteIndented = true;
+    options.SerializerOptions.Converters.Add(
+        new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)
     );
 });
 
@@ -42,8 +68,6 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.RegisterSchemaEndpoints();
-
-app.MapGet("/", () => "Hello World!");
+app.RegisterContentTypeEndpoints();
 
 app.Run();
