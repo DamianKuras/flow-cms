@@ -488,3 +488,5 @@ $RECYCLE.BIN/
 /Api/appsettings.json
 
 /Api/Api.json
+
+/Infrastructure/Migrations/*
