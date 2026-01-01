@@ -19,6 +19,13 @@ public static class ResultExtensions
                 detail: error.Message
             ),
 
+        [ErrorTypes.Validation] = error =>
+            TypedResults.Problem(
+                statusCode: StatusCodes.Status400BadRequest,
+                title: "Bad request",
+                detail: error.Message
+            ),
+
         [ErrorTypes.Conflict] = error =>
             TypedResults.Problem(
                 statusCode: StatusCodes.Status409Conflict,
@@ -49,10 +56,11 @@ public static class ResultExtensions
     };
 
     /// <summary>
-    /// Maps a domain error to an appropriate HTTP problem result based on the error type.
+    /// Maps a domain <see cref="Error"/> into the appropriate HTTP problem result.
     /// </summary>
-    /// <param name="error">The domain error to map.</param>
+    /// <param name="error">The domain error to convert.</param>
     /// <returns>An <see cref="IResult"/> representing the HTTP problem response corresponding to the error type.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="error"/> is null.</exception>
     public static IResult MapErrorToResult(Error error) =>
         _errorMappers.TryGetValue(error.Type, out Func<Error, IResult>? mapper)
             ? mapper(error)
@@ -63,51 +71,49 @@ public static class ResultExtensions
             );
 
     /// <summary>
-    /// Maps a multi-field validation result to an HTTP validation problem result.
+    /// Maps a <see cref="MultiFieldValidationResult"/> to a validation problem response.
     /// </summary>
-    /// <param name="validation">The validation result containing field-level validation errors.</param>
-    /// <returns>An <see cref="IResult"/> representing an HTTP 400 Bad Request response with validation error details.</returns>
+    /// <param name="validation">The validation result.</param>
+    /// <returns>An <see cref="IResult"/> representing a 400 Bad Request with field errors.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="validation"/> is null.</exception>
     public static IResult MapValidationToResult(MultiFieldValidationResult validation)
     {
+        ArgumentNullException.ThrowIfNull(validation);
         var errorsDictionary = validation
             .ValidationResults.Where(vr => vr.ValidationErrors.Count > 0)
             .ToDictionary(vr => vr.FieldName, vr => vr.ValidationErrors.ToArray());
 
         return TypedResults.ValidationProblem(errorsDictionary, title: "Validation failed");
     }
-}
 
-/// <summary>
-/// Provides extension methods for handling and transforming command responses.
-/// </summary>
-public static class CommandResponseExtensions
-{
     /// <summary>
-    /// Applies pattern matching to a command response, invoking the appropriate handler based on the response state.
+    /// Matches a <see cref="Result{TResult}"/> to either a success handler or an HTTP error result.
     /// </summary>
-    /// <typeparam name="T">The type of data contained in the command response.</typeparam>
-    /// <param name="response">The command response to match against.</param>
-    /// <param name="onSuccess">The function to invoke when the command succeeds, receiving the success data.</param>
-    /// <param name="onValidationFailure">The function to invoke when validation fails, receiving the validation result.</param>
-    /// <param name="onFailure">The function to invoke when the command fails, receiving the error.</param>
-    /// <returns>An <see cref="IResult"/> produced by one of the handler functions based on the response state.</returns>
-    public static IResult Match<T>(
-        this CommandResponse<T> response,
-        Func<T, IResult> onSuccess,
-        Func<MultiFieldValidationResult, IResult> onValidationFailure,
-        Func<Error, IResult> onFailure
+    /// <typeparam name="TResult">The success value type.</typeparam>
+    /// <param name="result">The result to match.</param>
+    /// <param name="onSuccess">The handler to execute on success.</param>
+    /// <returns>An <see cref="IResult"/> corresponding to success or failure.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="result"/> or <paramref name="onSuccess"/> is null.</exception>
+    public static IResult Match<TResult>(
+        this Result<TResult> result,
+        Func<TResult, IResult> onSuccess
     )
     {
-        if (response.Validation?.IsFailure == true)
-        {
-            return onValidationFailure(response.Validation);
-        }
+        ArgumentNullException.ThrowIfNull(result);
+        ArgumentNullException.ThrowIfNull(onSuccess);
 
-        if (!response.Result!.IsSuccess)
+        return result.FailureKind switch
         {
-            return onFailure(response.Result.Error!);
-        }
-
-        return onSuccess(response.Result.Value!);
+            FailureKind.None => onSuccess(result.Value!),
+            FailureKind.DomainError => MapErrorToResult(result.Error!),
+            FailureKind.MultiFieldValidation => MapValidationToResult(
+                result.MultiFieldValidationResult!
+            ),
+            _ => Results.Problem(
+                statusCode: StatusCodes.Status500InternalServerError,
+                title: "Unhandled result state",
+                detail: "Encountered an unknown failure kind."
+            ),
+        };
     }
 }
