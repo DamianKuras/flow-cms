@@ -5,90 +5,84 @@ namespace Domain.Common;
 /// </summary>
 public enum ErrorTypes
 {
+    /// <summary>
+    /// Indicates that the error was caused by invalid input.
+    /// </summary>
     Validation,
+
+    /// <summary>
+    /// Indicates that a requested resource could not be found.
+    /// </summary>
     NotFound,
+
+    /// <summary>
+    /// Indicates that the operation could not be completed due to a conflict
+    /// with the current state of the resource.
+    /// </summary>
     Conflict,
+
+    /// <summary>
+    /// Indicates that the operation is not allowed due to insufficient permissions.
+    /// </summary>
     Forbidden,
+
+    /// <summary>
+    /// Indicates that authentication is required or has failed.
+    /// </summary>
     Unauthorized,
+
+    /// <summary>
+    /// Indicates that an infrastructure or system-level error has occurred.
+    /// </summary>
     Infrastructure,
 }
 
 /// <summary>
-/// Represents an error with contextual info message.
+/// Represents an error with contextual information.
 /// </summary>
 /// <param name="Message">The error message describing what went wrong.</param>
 /// <param name="Type">The category of error that occurred.</param>
-/// <param name="ValidationFailures">Optional collection of validation failures for Validation error types.</param>
-public record Error(
-    string Message,
-    ErrorTypes Type,
-    IReadOnlyList<ValidationResult>? ValidationFailures = null
-)
+public record Error(string Message, ErrorTypes Type)
 {
     /// <summary>
-    /// Creates a NotFound error.
+    /// Creates a <see cref="ErrorTypes.NotFound"/> error.
     /// </summary>
     /// <param name="message">The error message.</param>
-    /// <returns>An Error with type NotFound.</returns>
-    public static Error NotFound(string message) =>
-        new(message, ErrorTypes.NotFound);
+    /// <returns>An <see cref="Error"/> with type <see cref="ErrorTypes.NotFound"/>.</returns>
+    public static Error NotFound(string message) => new(message, ErrorTypes.NotFound);
 
     /// <summary>
-    /// Creates a Forbidden error.
+    /// Creates a <see cref="ErrorTypes.Forbidden"/> error.
     /// </summary>
     /// <param name="message">The error message.</param>
-    /// <returns>An Error with type Forbidden.</returns>
-    public static Error Forbidden(string message) =>
-        new(message, ErrorTypes.Forbidden);
+    /// <returns>An <see cref="Error"/> with type <see cref="ErrorTypes.Forbidden"/>.</returns>
+    public static Error Forbidden(string message) => new(message, ErrorTypes.Forbidden);
 
     /// <summary>
-    /// Creates a Conflict error.
+    /// Creates a <see cref="ErrorTypes.Conflict"/> error.
     /// </summary>
     /// <param name="message">The error message.</param>
-    /// <returns>An Error with type Conflict.</returns>
-    public static Error Conflict(string message) =>
-        new(message, ErrorTypes.Conflict);
+    /// <returns>An <see cref="Error"/> with type <see cref="ErrorTypes.Conflict"/>.</returns>
+    public static Error Conflict(string message) => new(message, ErrorTypes.Conflict);
 
     /// <summary>
-    /// Creates a Unauthorized error.
+    /// Creates an <see cref="ErrorTypes.Unauthorized"/> error.
     /// </summary>
     /// <param name="message">The error message.</param>
-    /// <returns>An Error with type Unauthorized.</returns>
-    public static Error Unauthorized(string message) =>
-        new(message, ErrorTypes.Unauthorized);
+    /// <returns>An <see cref="Error"/> with type <see cref="ErrorTypes.Unauthorized"/>.</returns>
+    public static Error Unauthorized(string message) => new(message, ErrorTypes.Unauthorized);
 
     /// <summary>
-    /// Creates a Infrastructure error.
+    /// Creates an <see cref="ErrorTypes.Infrastructure"/> error.
     /// </summary>
     /// <param name="message">The error message.</param>
-    /// <returns>An Error with type Infrastructure.</returns>
-    public static Error Infrastructure(string message) =>
-        new(message, ErrorTypes.Infrastructure);
+    /// <returns>An <see cref="Error"/> with type <see cref="ErrorTypes.Infrastructure"/>.</returns>
+    public static Error Infrastructure(string message) => new(message, ErrorTypes.Infrastructure);
 
     /// <summary>
-    /// Creates a Validation error.
+    /// Creates a <see cref="ErrorTypes.Validation"/> error with a default message.
     /// </summary>
     /// <param name="message">The error message.</param>
-    /// <returns>An Error with type Validation.</returns>
-    public static Error Validation(string message) =>
-        new(message, ErrorTypes.Validation);
-
-    /// <summary>
-    /// Creates a Validation error with field-level failures.
-    /// </summary>
-    /// <param name="failures">The collection of validation failures.</param>
-    /// <returns>An Error with type Validation.</returns>
-    public static Error Validation(IReadOnlyList<ValidationResult> failures) =>
-        new("Validation failed.", ErrorTypes.Validation, failures);
-
-    /// <summary>
-    /// Creates a Validation error with a custom message and field-level failures.
-    /// </summary>
-    /// <param name="message">The error message.</param>
-    /// <param name="failures">The collection of validation failures.</param>
-    /// <returns>An Error with type Validation.</returns>
-    public static Error Validation(
-        string message,
-        IReadOnlyList<ValidationResult> failures
-    ) => new(message, ErrorTypes.Validation, failures);
+    /// <returns>An <see cref="Error"/> with type <see cref="ErrorTypes.Validation"/>.</returns>
+    public static Error Validation(string message) => new(message, ErrorTypes.Validation);
 }
