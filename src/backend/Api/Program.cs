@@ -1,73 +1,90 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using Api.Endpoints;
+using Api.Startup;
 using Application.ContentTypes;
 using Application.Interfaces;
-using Application.Schemas;
 using Infrastructure;
-using Infrastructure.Validation;
+using Infrastructure.Startup;
+using Infrastructure.Users;
+using Serilog;
 
-var builder = WebApplication.CreateBuilder(args);
+// Configure bootstrap logger for startup logging.
+Log.Logger = new LoggerConfiguration()
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .CreateBootstrapLogger();
 
-builder.Services.AddInfrastructure(builder.Configuration);
-
-builder.Services.AddScoped<
-    IQueryHandler<GetContentTypesQuery, List<ContentTypeListDto>>,
-    GetContentTypesHandler
->();
-
-builder.Services.AddScoped<
-    IQueryHandler<GetContentTypeQuery, ContentTypeDto>,
-    GetContentTypeHandler
->();
-
-builder.Services.AddScoped<
-    ICommandHandler<CreateContentTypeCommand, Guid>,
-    CreateContentTypeCommandHandler
->();
-
-builder.Services.AddScoped<
-    ICommandHandler<DeleteContentTypeCommand, Guid>,
-    DeleteContentType
->();
-
-builder.Services.AddOpenApi();
-
-// Configure CORS
-builder.Services.AddCors(options =>
+try
 {
-    options.AddPolicy(
-        "AllowAll",
-        builder =>
-        {
-            builder.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
-        }
+    Log.Information("Starting web application");
+    WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
+    builder.ConfigureSerilog();
+
+    builder.ConfigureProblemDetails();
+
+    builder.ConfigureCors();
+
+    builder.Services.AddInfrastructure(builder.Configuration);
+
+    // Auto-register all query and command handlers using Scrutor.
+    builder.Services.Scan(scan =>
+        scan.FromAssemblyOf<GetContentTypesHandler>()
+            .AddClasses(classes => classes.AssignableTo(typeof(IQueryHandler<,>)))
+            .AsImplementedInterfaces()
+            .WithScopedLifetime()
+            .AddClasses(classes => classes.AssignableTo(typeof(ICommandHandler<,>)))
+            .AsImplementedInterfaces()
+            .WithScopedLifetime()
     );
-});
 
-builder.Services.ConfigureHttpJsonOptions(options =>
-{
-    options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-    options.SerializerOptions.WriteIndented = true;
-    options.SerializerOptions.Converters.Add(
-        new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)
-    );
-});
+    builder.Services.AddOpenApi();
 
-var app = builder.Build();
+    builder.ConfigureJson();
 
-app.UseCors("AllowAll");
+    builder.Services.AddHttpContextAccessor();
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
+    builder.ConfigureAuthentication();
 
-    app.UseSwaggerUI(options =>
+    builder.Services.AddAuthorization();
+
+    WebApplication app = builder.Build();
+
+    app.UseCorsPolicy();
+
+    app.UseRequestLogging();
+
+    if (app.Environment.IsDevelopment())
     {
-        options.SwaggerEndpoint("/openapi/v1.json", "v1");
-    });
+        app.MapOpenApi();
+
+        app.UseSwaggerUI(options => options.SwaggerEndpoint("/openapi/v1.json", "v1"));
+    }
+
+    if (!app.Environment.IsDevelopment())
+    {
+        app.UseExceptionHandler("/Error");
+        app.UseHsts();
+    }
+    app.UseStatusCodePages();
+
+    app.UseAuthentication();
+    app.UseAuthorization();
+
+    app.MapEndpoints();
+
+    await app.SeedData();
+
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
 }
 
-app.RegisterContentTypeEndpoints();
-
-app.Run();
+/// <summary>
+/// Explicit definition of Program as partial for integration tests.
+/// </summary>
+public partial class Program { }
