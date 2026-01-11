@@ -1,6 +1,7 @@
 using Application.Interfaces;
 using Domain.Common;
 using Domain.ContentTypes;
+using Domain.Permissions;
 using Microsoft.Extensions.Logging;
 
 namespace Application.ContentTypes;
@@ -16,9 +17,11 @@ public sealed record PublishContentTypeCommand(string ContentTypeName);
 /// to published status, managing versioning, and archiving previous publications.
 /// </summary>
 /// <param name="contentTypeRepository">Repository for content type persistence operations.</param>
+/// <param name="authorizationService">Authorization service for checking if user is allowed to perform this action.</param>
 /// <param name="logger">Logger instance for structured logging.</param>
 public sealed class PublishContentTypeCommandHandler(
     IContentTypeRepository contentTypeRepository,
+    IAuthorizationService authorizationService,
     ILogger<PublishContentTypeCommandHandler> logger
 ) : ICommandHandler<PublishContentTypeCommand, Guid>
 {
@@ -36,11 +39,6 @@ public sealed class PublishContentTypeCommandHandler(
         CancellationToken cancellationToken
     )
     {
-        logger.LogInformation(
-            "Starting publish operation for content type '{ContentTypeName}'",
-            command.ContentTypeName
-        );
-
         ContentType? draft = await contentTypeRepository.GetLatestDraftVersion(
             command.ContentTypeName,
             cancellationToken
@@ -56,6 +54,27 @@ public sealed class PublishContentTypeCommandHandler(
                     $"The content type with name {command.ContentTypeName} was not found."
                 )
             );
+        }
+
+        logger.LogInformation(
+            "Starting publish operation for content type '{ContentTypeName}'",
+            command.ContentTypeName
+        );
+
+        bool allowed = await authorizationService.IsAllowedAsync(
+            CmsAction.Publish,
+            new ContentTypeResource(draft.Id),
+            cancellationToken
+        );
+
+        if (!allowed)
+        {
+            logger.LogWarning(
+                "Authorization failed for ContentTypeName={ContentTypeName}",
+                command.ContentTypeName
+            );
+
+            return Result<Guid>.Failure(Error.Forbidden("Forbidden"));
         }
 
         logger.LogDebug(
