@@ -1,8 +1,13 @@
+using Application.Fields;
 using Application.Interfaces;
 using Domain.Common;
 using Domain.ContentTypes;
 using Domain.Fields;
+using Domain.Fields.Transformers;
 using Domain.Fields.Validations;
+using Domain.Permissions;
+using Domain.Users;
+using Microsoft.Extensions.Logging;
 
 namespace Application.ContentTypes;
 
@@ -11,30 +16,72 @@ namespace Application.ContentTypes;
 /// </summary>
 /// <param name="Name">The name of the content type.</param>
 /// <param name="Fields">The field definitions for the content type.</param>
-public sealed record CreateContentTypeCommand(
-    string Name,
-    List<CreateFieldDto> Fields
-)
+public sealed record CreateContentTypeCommand(string Name, List<CreateFieldDto> Fields)
 {
     /// <summary>
     /// Validates the command data.
     /// </summary>
     /// <returns>Result indicating whether validation succeeded or failed.</returns>
-    public Result Validate()
+    public MultiFieldValidationResult Validate(
+        IValidationRuleRegistry validationRuleRegistry,
+        ITransformationRuleRegistry transformationRuleRegistry
+    )
     {
-        List<Error> errors = [];
-
+        var multiFieldValidationResult = new MultiFieldValidationResult();
+        var nameFieldValidationResult = new ValidationResult("Name");
         if (string.IsNullOrWhiteSpace(Name))
         {
-            errors.Add(Error.Validation("Name field is empty."));
+            nameFieldValidationResult.AddError(ValidationMessages.NAME_REQUIRED);
         }
-
+        multiFieldValidationResult.AddValidationResult(nameFieldValidationResult);
+        var fieldsFieldValidationResult = new ValidationResult("Fields");
         if (Fields == null || Fields.Count == 0)
         {
-            errors.Add(Error.Validation("Fields field is empty."));
+            fieldsFieldValidationResult.AddError(ValidationMessages.FIELDS_REQUIRED);
         }
+        else
+        {
+            foreach (CreateFieldDto field in Fields)
+            {
+                var currentFieldValidationResult = new ValidationResult(field.Name);
 
-        return errors.Count > 0 ? Result.Failure(errors) : Result.Success();
+                if (!Enum.IsDefined(field.Type))
+                {
+                    currentFieldValidationResult.AddError("Invalid field type.");
+                }
+                if (field.ValidationRules is not null)
+                {
+                    foreach (CreateValidationRuleDto rule in field.ValidationRules)
+                    {
+                        if (!validationRuleRegistry.TryCreate(rule.Type, rule.Parameters, out _))
+                        {
+                            currentFieldValidationResult.AddError(
+                                ValidationMessages.UnknownValidationRule(rule.Type, field.Name)
+                            );
+                        }
+                    }
+                }
+                if (field.TransformationRules is not null)
+                {
+                    foreach (CreateTransformationRuleDto rule in field.TransformationRules)
+                    {
+                        if (
+                            !transformationRuleRegistry.TryCreate(rule.Type, rule.Parameters, out _)
+                        )
+                        {
+                            currentFieldValidationResult.AddError(
+                                ValidationMessages.UnknownTransformationRule(rule.Type, field.Name)
+                            );
+                        }
+                    }
+                }
+
+                multiFieldValidationResult.AddValidationResult(currentFieldValidationResult);
+            }
+        }
+        multiFieldValidationResult.AddValidationResult(fieldsFieldValidationResult);
+
+        return multiFieldValidationResult;
     }
 }
 
@@ -43,11 +90,19 @@ public sealed record CreateContentTypeCommand(
 /// </summary>
 /// <param name="contentTypeRepository">Content type repository.</param>
 /// <param name="validationRuleRegistry">Registry for validation rules.</param>
+/// <param name="transformationRuleRegistry"></param>
+/// <param name="authorizationService">Authorization service for checking if user is allowed to perform this action.</param>
+/// <param name="logger"></param>
 public sealed class CreateContentTypeCommandHandler(
     IContentTypeRepository contentTypeRepository,
-    IValidationRuleRegistry validationRuleRegistry
+    IValidationRuleRegistry validationRuleRegistry,
+    ITransformationRuleRegistry transformationRuleRegistry,
+    IAuthorizationService authorizationService,
+    ILogger<CreateContentTypeCommandHandler> logger
 ) : ICommandHandler<CreateContentTypeCommand, Guid>
 {
+    private const int INITIAL_VERSION = 1;
+
     /// <summary>
     /// Handles the content type creation command.
     /// </summary>
@@ -59,40 +114,61 @@ public sealed class CreateContentTypeCommandHandler(
         CancellationToken cancellationToken
     )
     {
+        logger.LogInformation("Handling CreateContentTypeCommand for Name={Name}", command.Name);
+        bool allowed = await authorizationService.IsAllowedAsync(
+            CmsAction.Create,
+            new ContentTypeResource(Guid.Empty), // global create
+            cancellationToken
+        );
+
+        if (!allowed)
+        {
+            logger.LogWarning(
+                "Authorization failed for CreateContentTypeCommand Name={Name}",
+                command.Name
+            );
+
+            return Result<Guid>.Failure(Error.Forbidden("Forbidden"));
+        }
         // Validate command structure.
-        var validateCommandResult = command.Validate();
+        MultiFieldValidationResult validateCommandResult = command.Validate(
+            validationRuleRegistry,
+            transformationRuleRegistry
+        );
+
         if (validateCommandResult.IsFailure)
         {
-            return Result<Guid>.Failure(validateCommandResult.Errors!);
+            logger.LogWarning(
+                "Validation failed for CreateContentTypeCommand Name={Name} Errors={Errors}",
+                command.Name,
+                validateCommandResult
+            );
+            return Result<Guid>.MultiFieldValidationFailure(validateCommandResult);
         }
-        // Validate all validation rules are valid and registered.
-        var validationRuleValidationResult = ValidateValidationRules(
-            command.Fields,
-            validationRuleRegistry
-        );
-        if (validationRuleValidationResult.IsFailure)
-            return Result<Guid>.Failure(validationRuleValidationResult.Errors!);
 
         // Get version for content.
-        int latestVersion = await contentTypeRepository.GetLatestVersion(
+        int? latestVersion = await contentTypeRepository.GetLatestVersion(
             command.Name,
             cancellationToken
         );
-        int version = latestVersion + 1;
-        Guid contentTypeId = Guid.NewGuid();
+        int version = latestVersion ?? INITIAL_VERSION;
+        var contentTypeId = Guid.NewGuid();
 
-        var domainFields = BuildDomainFields(command.Fields);
+        List<Field> domainFields = BuildDomainFields(command.Fields);
 
-        var contentType = new ContentType(
-            contentTypeId,
+        logger.LogInformation(
+            "Creating content type '{Name}' version {Version} with {FieldCount} fields",
             command.Name,
-            domainFields,
-            version
+            version,
+            domainFields.Count
         );
 
-        await contentTypeRepository.AddAsync(contentType, cancellationToken);
+        var contentType = new ContentType(contentTypeId, command.Name, domainFields, version);
 
+        await contentTypeRepository.AddAsync(contentType, cancellationToken);
         await contentTypeRepository.SaveChangesAsync(cancellationToken);
+
+        logger.LogInformation("Created content type with ID={ContentTypeId}", contentTypeId);
 
         return Result<Guid>.Success(contentTypeId);
     }
@@ -106,7 +182,7 @@ public sealed class CreateContentTypeCommandHandler(
     {
         var list = new List<Field>();
 
-        foreach (var fieldDto in fields)
+        foreach (CreateFieldDto fieldDto in fields)
         {
             var field = new Field(
                 Guid.NewGuid(),
@@ -114,58 +190,69 @@ public sealed class CreateContentTypeCommandHandler(
                 fieldDto.Name,
                 fieldDto.IsRequired
             );
-            List<IValidationRule> rules = new();
+            List<IValidationRule> validationRules = new();
             if (fieldDto.ValidationRules is not null)
             {
-                foreach (var rule in fieldDto.ValidationRules)
+                foreach (CreateValidationRuleDto rule in fieldDto.ValidationRules)
                 {
-                    IValidationRule rule_out = validationRuleRegistry.Create(
+                    IValidationRule ruleOut = validationRuleRegistry.Create(
                         rule.Type,
                         rule.Parameters
                     );
-                    rules.Add(rule_out);
+                    validationRules.Add(ruleOut);
                 }
             }
-            field.SetValidationRules(rules);
+            field.SetValidationRules(validationRules);
+            List<ITransformationRule> transformationRules = new();
+            if (fieldDto.TransformationRules is not null)
+            {
+                foreach (CreateTransformationRuleDto rule in fieldDto.TransformationRules)
+                {
+                    ITransformationRule rule_out = transformationRuleRegistry.Create(
+                        rule.Type,
+                        rule.Parameters
+                    );
+                    transformationRules.Add(rule_out);
+                }
+            }
+            field.SetTransformationRules(transformationRules);
             list.Add(field);
         }
 
         return list;
     }
+}
+
+/// <summary>
+/// Centralized validation messages for content type operations.
+/// </summary>
+public static class ValidationMessages
+{
+    /// <summary>
+    /// Name is required.
+    /// </summary>
+    public const string NAME_REQUIRED = "Name is required.";
 
     /// <summary>
-    /// Validates that all referenced validation rule types are registered.
+    /// Fields are required.
     /// </summary>
-    /// <param name="fields">Fields with validation rules to validate.</param>
-    /// <param name="validationRuleRegistry">Validation rule registry.</param>
-    /// <returns>Result of the validation.</returns>
-    private Result ValidateValidationRules(
-        List<CreateFieldDto> fields,
-        IValidationRuleRegistry validationRuleRegistry
-    )
-    {
-        foreach (var field in fields)
-        {
-            if (
-                field.ValidationRules is null
-                || field.ValidationRules.Count == 0
-            )
-                continue;
+    public const string FIELDS_REQUIRED = "Fields field is empty.";
 
-            foreach (var rule in field.ValidationRules)
-            {
-                if (!validationRuleRegistry.TryCreate(rule.Type, null, out _))
-                {
-                    return Result.Failure(
-                        Error.Validation(
-                            $"Unknown validation rule type '{rule.Type}' "
-                                + $"in field '{field.Name}'."
-                        )
-                    );
-                }
-            }
-        }
+    /// <summary>
+    /// Unknown Validation Rule.
+    /// </summary>
+    /// <param name="ruleType">The rule type of the validation rule.</param>
+    /// <param name="fieldName">The field name of field containing this validation rule. </param>
+    /// <returns>String with error message</returns>
+    public static string UnknownValidationRule(string ruleType, string fieldName) =>
+        $"Unknown validation rule type '{ruleType}' in field '{fieldName}'.";
 
-        return Result.Success();
-    }
+    /// <summary>
+    /// Unknown Transformation Rule.
+    /// </summary>
+    /// <param name="ruleType">The rule type of the transformation rule.</param>
+    /// <param name="fieldName">The field name of field containing this transformation rule.</param>
+    /// <returns>String with error message</returns>
+    public static string UnknownTransformationRule(string ruleType, string fieldName) =>
+        $"Unknown transformation rule type '{ruleType}' in field '{fieldName}'.";
 }
