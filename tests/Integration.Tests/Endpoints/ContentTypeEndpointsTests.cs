@@ -6,6 +6,7 @@ using Application.Fields;
 using Domain.Common;
 using Domain.ContentTypes;
 using Domain.Fields;
+using Domain.Fields.Transformers;
 using Domain.Fields.Validations;
 using Integration.Tests.Authentication;
 using Integration.Tests.Builders;
@@ -211,7 +212,7 @@ public class ContentTypeEndpointsTests
                 "Title",
                 f =>
                     f.Required()
-                        .WithValidation(
+                        .WithValidationRule(
                             MaximumLengthValidationRule.TYPE_NAME,
                             new Dictionary<string, object> { ["max-length"] = 100 }
                         )
@@ -223,6 +224,37 @@ public class ContentTypeEndpointsTests
         Assert.True(titleField.IsRequired);
         Assert.Single(titleField.ValidationRules);
         Assert.Equal(MaximumLengthValidationRule.TYPE_NAME, titleField.ValidationRules[0].Type);
+    }
+
+    [Fact]
+    public async Task GetContentTypeById_ReturnsFieldsWithTransformationRules()
+    {
+        // Arrange
+        string token = await AuthenticationHelper.GetAdminAuthTokenAsync(_client);
+        _client.AddAuthToken(token);
+        var truncateRule = new TruncateByLengthTransformationRule(10);
+        ContentTypeDto contentType = await ContentTypeBuilder
+            .Create(_client)
+            .TextField(
+                "Title",
+                f =>
+                    f.WithTransformationRule(
+                        TruncateByLengthTransformationRule.TYPE_NAME,
+                        truncateRule.Parameters
+                    )
+            )
+            .BuildAsync("TransformView");
+
+        // Act
+        FieldDto titleField = contentType.Fields.First(f => f.Name == "Title");
+
+        // Assert
+        Assert.NotNull(titleField.TransformationRules);
+        Assert.Single(titleField.TransformationRules);
+        Assert.Equal(
+            TruncateByLengthTransformationRule.TYPE_NAME,
+            titleField.TransformationRules[0].Type
+        );
     }
 
     #endregion
@@ -245,6 +277,68 @@ public class ContentTypeEndpointsTests
 
         // Assert
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreateContentType_ReturnsBadRequest_WithUnknownTransformationRule()
+    {
+        // Arrange
+        string token = await AuthenticationHelper.GetAdminAuthTokenAsync(_client);
+        _client.AddAuthToken(token);
+
+        var command = new CreateContentTypeCommand(
+            "TransformTest",
+            new List<CreateFieldDto>
+            {
+                new CreateFieldDto(
+                    Name: "Title",
+                    Type: FieldTypes.Text,
+                    IsRequired: true,
+                    ValidationRules: null,
+                    TransformationRules: new List<CreateTransformationRuleDto>
+                    {
+                        new CreateTransformationRuleDto("UnknownTransformer", null),
+                    }
+                ),
+            }
+        );
+
+        // Act
+        HttpResponseMessage response = await _client.PostAsJsonAsync(REQUEST_URI, command);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreateContentType_Succeeds_WithValidTransformationRule()
+    {
+        // Arrange
+        string token = await AuthenticationHelper.GetAdminAuthTokenAsync(_client);
+        _client.AddAuthToken(token);
+
+        var command = new CreateContentTypeCommand(
+            "TransformOk",
+            new List<CreateFieldDto>
+            {
+                new CreateFieldDto(
+                    Name: "Title",
+                    Type: FieldTypes.Text,
+                    IsRequired: true,
+                    ValidationRules: null,
+                    TransformationRules: new List<CreateTransformationRuleDto>
+                    {
+                        new CreateTransformationRuleDto("LowercaseTransformationRule", null),
+                    }
+                ),
+            }
+        );
+
+        // Act
+        HttpResponseMessage response = await _client.PostAsJsonAsync(REQUEST_URI, command);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
     }
 
     #endregion
@@ -534,6 +628,53 @@ public class ContentTypeEndpointsTests
         Assert.Equal(2, publishedDetails.Fields.Count);
         Assert.Contains(publishedDetails.Fields, f => f.Name == "Title" && f.IsRequired);
         Assert.Contains(publishedDetails.Fields, f => f.Name == "Description");
+    }
+
+    [Fact]
+    public async Task PublishContentType_PreservesTransformationRules()
+    {
+        // Arrange
+        string token = await AuthenticationHelper.GetAdminAuthTokenAsync(_client);
+        _client.AddAuthToken(token);
+        var truncateRule = new TruncateByLengthTransformationRule(10);
+
+        string typeName = "TransformPublish";
+
+        await ContentTypeBuilder
+            .Create(_client)
+            .TextField(
+                "Title",
+                f =>
+                    f.WithTransformationRule(
+                        TruncateByLengthTransformationRule.TYPE_NAME,
+                        truncateRule.Parameters
+                    )
+            )
+            .BuildAsync(typeName);
+
+        // Act
+        await _client.PostAsync($"{REQUEST_URI}/{typeName}/publish", null);
+
+        // Assert
+        PagedResponse<PagedContentType>? list = await _client.GetFromJsonAsync<
+            PagedResponse<PagedContentType>
+        >(REQUEST_URI);
+
+        PagedContentType published = list!.Data.First(ct =>
+            ct.Name == typeName && ct.Status == "PUBLISHED"
+        );
+
+        ContentTypeDto publishedDetails = await _client.GetFromJsonAsync<ContentTypeDto>(
+            $"{REQUEST_URI}/{published.Id}"
+        )!;
+
+        FieldDto titleField = publishedDetails.Fields.First(f => f.Name == "Title");
+
+        Assert.Single(titleField.TransformationRules);
+        Assert.Equal(
+            TruncateByLengthTransformationRule.TYPE_NAME,
+            titleField.TransformationRules[0].Type
+        );
     }
 
     [Fact]
