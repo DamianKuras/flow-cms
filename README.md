@@ -69,3 +69,22 @@ The **Integration.Tests** project uses **Testcontainers**. You must have **Docke
    ```bash
    dotnet test ./tests/Application.Tests
    ```
+
+## Validation Rules and Transformation Rules Plugin Guide
+
+This project supports **validation rule plugins** and **transformation rule plugins** implemented as separate .NET assemblies.  
+Plugins are discovered and loaded at runtime by scanning a plugins folder for `.dll` files and reflecting on types that implement `IValidationRule` or `ITransformationRule`.
+
+---
+
+## How Plugin Loading Works
+
+At startup, the host application:
+
+1. Loads all `.dll` files from a configured `plugins` folder.
+2. Scans each assembly for types implementing `IValidationRule` or `ITransformationRule`.
+3. Registers them into the validation rule registry.
+4. Makes them available for validation logic in your app.
+
+Example plugin folder is located under /src/backend/ExamplePlugin
+you can build this project and then move PluginExample.dll to the /plugins folder in your compiled cms app.
