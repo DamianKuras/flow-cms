@@ -1,40 +1,44 @@
+using Domain.Common;
+
 namespace Domain.Fields.Transformers;
 
 /// <summary>
-/// Transformation rule that truncates string values to a specified maximum length.
-/// Non-string values are passed through unchanged.
+/// Truncates string values to a maximum length.
+/// Non-string values are returned unchanged.
 /// </summary>
 public sealed class TruncateByLengthTransformationRule : ParameterizedTransformationRuleBase
 {
+    /// <summary>
+    /// Empty constructor.
+    /// </summary>
+    public TruncateByLengthTransformationRule() { }
+
     /// <summary>
     /// The type identifier for this transformation rule.
     /// </summary>
     public const string TYPE_NAME = "TruncateByLength";
 
     /// <summary>
-    /// Gets the type identifier for this transformation rule.
+    /// The parameter key for the truncation length.
     /// </summary>
+    private const string TRUNCATION_LENGTH_PARAM = "truncationLength";
+
+    /// <inheritdoc/>
     public override string Type => TYPE_NAME;
 
     /// <summary>
-    /// The maximum length to which strings will be truncated.
+    /// The required capability for the truncation rule.
     /// </summary>
+    public override Capability RequiredCapability => new Capability(Capability.Standard.TEXT);
+
     private readonly int _maxLength;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="TruncateByLengthTransformationRule"/> class.
-    /// This parameterless constructor is intended for deserialization scenarios.
-    /// </summary>
-    public TruncateByLengthTransformationRule() => _maxLength = 0;
-
-    /// <summary>
     /// Initializes a new instance of the <see cref="TruncateByLengthTransformationRule"/> class
-    /// with the specified truncation length.
+    /// with the specified maximum length.
     /// </summary>
-    /// <param name="truncationLength">The maximum length for truncated strings. Must be non-negative.</param>
-    /// <exception cref="ArgumentOutOfRangeException">
-    /// Thrown when <paramref name="truncationLength"/> is negative.
-    /// </exception>
+    /// <param name="truncationLength">The maximum length of the string after truncation. Must be non-negative.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="truncationLength"/> is negative.</exception>
     public TruncateByLengthTransformationRule(int truncationLength)
     {
         if (truncationLength < 0)
@@ -46,7 +50,7 @@ public sealed class TruncateByLengthTransformationRule : ParameterizedTransforma
             );
         }
 
-        Parameters.Add("truncationLength", truncationLength);
+        Parameters.Add(TRUNCATION_LENGTH_PARAM, truncationLength);
         _maxLength = truncationLength;
     }
 
@@ -60,25 +64,19 @@ public sealed class TruncateByLengthTransformationRule : ParameterizedTransforma
 
         if (value is not string str)
         {
-            return value;
+            return value; // only transform strings
         }
 
-        int maxLength = _maxLength;
-        if (maxLength == 0 && Parameters.TryGetValue("truncationLength", out object? paramValue))
-        {
-            maxLength = Convert.ToInt32(paramValue);
-        }
-
-        if (maxLength == 0)
+        if (_maxLength == 0)
         {
             return string.Empty;
         }
 
-        if (str.Length <= maxLength)
+        if (str.Length <= _maxLength)
         {
             return str;
         }
 
-        return str[..maxLength];
+        return str[.._maxLength];
     }
 }

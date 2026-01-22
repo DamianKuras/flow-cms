@@ -1,7 +1,7 @@
-namespace Domain.Fields.Validations;
+namespace Domain.Common;
 
 /// <summary>
-/// Represents a capability constraint for validation rules.
+/// Represents a capability constraint for validation and transformation rules.
 /// </summary>
 /// <remarks>
 /// Capabilities define the data types that a validation rule is designed to validate against.
@@ -15,8 +15,19 @@ public record Capability(string Name)
     /// </summary>
     public static class Standard
     {
+        /// <summary>
+        ///
+        /// </summary>
         public const string TEXT = "Text";
+
+        /// <summary>
+        ///
+        /// </summary>
         public const string NUMERIC = "Numeric";
+
+        /// <summary>
+        ///
+        /// </summary>
         public const string DATE = "Date";
     }
 }
