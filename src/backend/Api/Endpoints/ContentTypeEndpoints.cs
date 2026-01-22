@@ -54,6 +54,14 @@ public static class ContentTypeEndpoints
             .Produces(StatusCodes.Status404NotFound);
 
         group
+            .MapPost("/{contentTypeName}/archive", ArchiveContentType)
+            .WithName("ArchiveContentType")
+            .RequireAuthorization()
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status404NotFound);
+
+        group
             .MapPost("{contentTypeName}/publish", PublishContentType)
             .WithName("PublishContentType")
             .RequireAuthorization()
@@ -66,11 +74,14 @@ public static class ContentTypeEndpoints
         [FromServices] IQueryHandler<GetContentTypesQuery, GetContentTypeResponse> handler,
         CancellationToken cancellationToken,
         [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 10
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string sort = "",
+        [FromQuery] string status = "",
+        [FromQuery] string filter = ""
     )
     {
         var paginationParameters = new PaginationParameters(pageNumber, pageSize);
-        var query = new GetContentTypesQuery(paginationParameters);
+        var query = new GetContentTypesQuery(paginationParameters, sort, status, filter);
         Result<GetContentTypeResponse> result = await handler.Handle(query, cancellationToken);
         return result.Match(onSuccess: response =>
             Results.Ok(Mapper.MapPagedListToPagedResult(response.Data))
@@ -111,6 +122,17 @@ public static class ContentTypeEndpoints
     )
     {
         DeleteContentTypeCommand command = new(id);
+        Result<Guid> result = await handler.Handle(command, cancellationToken);
+        return result.Match(onSuccess: guid => Results.NoContent());
+    }
+
+    private static async Task<IResult> ArchiveContentType(
+        [FromRoute] string contentTypeName,
+        [FromServices] ICommandHandler<ArchiveContentTypeCommand, Guid> handler,
+        CancellationToken cancellationToken
+    )
+    {
+        var command = new ArchiveContentTypeCommand(contentTypeName);
         Result<Guid> result = await handler.Handle(command, cancellationToken);
         return result.Match(onSuccess: guid => Results.NoContent());
     }
