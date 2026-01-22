@@ -20,6 +20,23 @@ public interface IContentTypeRepository
     Task<ContentType?> GetByIdAsync(Guid id, CancellationToken ct = default);
 
     /// <summary>
+    /// Retrieves a paginated, filtered, and sorted list of content types.
+    /// </summary>
+    /// <param name="paginationParameters">Pagination settings including page number and page size.</param>
+    /// <param name="sort">Sort expression (e.g., "name.asc", "version.desc").</param>
+    /// <param name="status">Filter by content type status (e.g., "draft", "published", "archived").</param>
+    /// <param name="nameFilter">Content type name search filter.</param>
+    /// <param name="ct">Cancellation token for async operation.</param>
+    /// <returns>A paginated list of content types matching the specified criteria.</returns>
+    Task<PagedList<PagedContentType>> Get(
+        PaginationParameters paginationParameters,
+        string sort,
+        string status,
+        string nameFilter,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
     /// Adds a new content type to the repository.
     /// </summary>
     /// <param name="contentType">The content type to add.</param>
@@ -46,12 +63,6 @@ public interface IContentTypeRepository
     Task SaveChangesAsync(CancellationToken ct = default);
 
     /// <summary>
-    /// Deletes a content type from the repository.
-    /// </summary>
-    /// <param name="contentType">The content type to delete.</param>
-    Task DeleteAsync(ContentType contentType);
-
-    /// <summary>
     /// Retrieves the latest version number for a content type with the specified name.
     /// </summary>
     /// <param name="contentTypeName">The name of the content type.</param>
@@ -61,4 +72,39 @@ public interface IContentTypeRepository
     /// Thrown when <paramref name="contentTypeName"/> is null or whitespace.
     /// </exception>
     Task<int?> GetLatestVersion(string contentTypeName, CancellationToken ct = default);
+
+    /// <summary>
+    /// Retrieves the latest draft version of the content type with the specified name.
+    /// </summary>
+    /// <param name="contentTypeName">The name of the content type.</param>
+    /// <param name="ct">Cancellation token for async operation.</param>
+    /// <returns>The latest draft content type if found; otherwise, null.</returns>
+    /// <exception cref="ArgumentException">
+    /// Thrown when <paramref name="contentTypeName"/> is null or whitespace.
+    /// </exception>
+    Task<ContentType?> GetLatestDraftVersion(
+        string contentTypeName,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
+    /// Retrieves the latest published version of the content type with the specified name.
+    /// </summary>
+    /// <param name="contentTypeName">The name of the content type.</param>
+    /// <param name="ct">Cancellation token for async operation.</param>
+    /// <returns>The latest published content type if found; otherwise, null.</returns>
+    /// <exception cref="ArgumentException">
+    /// Thrown when <paramref name="contentTypeName"/> is null or whitespace.
+    /// </exception>
+    Task<ContentType?> GetLatestsPublishedVersion(
+        string contentTypeName,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
+    /// Marks a content type as deleted without removing it from the database (soft delete).
+    /// </summary>
+    /// <param name="contentType">The content type to soft delete.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    Task SoftDelete(ContentType contentType);
 }
