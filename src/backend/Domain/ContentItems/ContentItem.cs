@@ -1,81 +1,86 @@
 using Domain.Common;
 using Domain.ContentTypes;
 using Domain.Fields;
+// using Domain.Fields.Transformers;
+using Domain.Fields.Validations;
 
 namespace Domain.ContentItems;
 
 /// <summary>
 /// Represents a content item that manages a collection of field values based on a specific content type definition.
 /// </summary>
-/// <param name="id">The unique identifier for this content item.</param>
-/// <param name="name">The name of the content item.</param>
-/// <param name="content_type">The content type definition that defines which fields this item can have.</param>
-/// <param name="values">The initial collection of field values.</param>
-public class ContentItem(
-    Guid id,
-    string name,
-    ContentType content_type,
-    Dictionary<Guid, ContentFieldValue> values
-)
+public class ContentItem
 {
-    public Guid Id { get; } = id;
-
-    public string Name { get; } = name;
-
-    public ContentType ContentType { get; } = content_type;
-
-    public ContentItemStatus Status { get; } = ContentItemStatus.Draft;
-    private readonly Dictionary<Guid, ContentFieldValue> _values = values;
-
-    public IReadOnlyDictionary<Guid, ContentFieldValue> Values =>
-        _values.AsReadOnly();
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ContentItem"/> class.
+    /// </summary>
+    public ContentItem() { }
 
     /// <summary>
-    /// Sets or updates a field value for this content item after applying transformation
-    /// and validation based on the field definition.
+    /// Initializes a new instance of the <see cref="ContentItem"/> class with the specified values.
     /// </summary>
-    /// <param name="definition">The field definition that specifies how to transform and validate the raw value.
-    ///  The field must be defined in this item's ContentType.</param>
-    /// <param name="rawValue">The raw field value to set. This can be any type and will be transformed
-    /// according to the field's transformer pipeline.</param>
-    /// <returns>
-    /// A Result object that indicates success or contains validation error details.
-    /// Success indicates the field value was successfully set.
-    /// Failure contains details about why the operation failed.</returns>
-    public Result SetFieldValue(Field definition, object? rawValue)
+    /// <param name="id">The unique identifier for the content item.</param>
+    /// <param name="title">The title of the content item. Cannot be null or empty.</param>
+    /// <param name="contentTypeId">The unique identifier of the content type this item belongs to.</param>
+    /// <remarks>
+    /// The content item is created with a default status of <see cref="ContentItemStatus.Draft"/>.
+    /// Field values should be set using the content item field service after construction.
+    /// </remarks>
+    public ContentItem(Guid id, string title, Guid contentTypeId)
     {
-        if (!ContentType.HasField(definition.Id))
-        {
-            return Result.Failure(
-                Error.NotFound(
-                    $"Field '{definition.Name}' not in ContentType '{ContentType.Name}'"
-                )
-            );
-        }
-        object? transformed = definition.ApplyTransformers(rawValue);
-
-        ValidationResult validation_result = definition.Validate(transformed);
-        if (!validation_result.IsValid)
-        {
-            return Result.Failure(Error.Validation([validation_result]));
-        }
-
-        _values[definition.Id].Value = transformed;
-        _values[definition.Id].UpdatedAt = DateTime.UtcNow;
-
-        return Result.Success();
+        Id = id;
+        Title = title;
+        ContentTypeId = contentTypeId;
     }
 
-    public Result<object> GetFieldValue(Guid fieldId)
+    /// <summary>
+    /// Gets the unique identifier for this content item.
+    /// </summary>
+    public Guid Id { get; }
+
+    /// <summary>
+    /// Gets the title of the content item.
+    /// </summary>
+    public string Title { get; } = "";
+
+    /// <summary>
+    /// Gets the unique identifier of the content type this item is based on.
+    /// </summary>
+    /// <value>A <see cref="Guid"/> referencing the associated <see cref="ContentType"/>.</value>
+    public Guid ContentTypeId { get; private set; }
+
+    /// <summary>
+    /// Gets the current status of the content item.
+    /// </summary>
+    /// <value>The status of the content item, defaulting to <see cref="ContentItemStatus.Draft"/>.</value>
+    public ContentItemStatus Status { get; } = ContentItemStatus.Draft;
+
+    private readonly Dictionary<Guid, ContentFieldValue> _values = [];
+
+    /// <summary>
+    /// Gets a read-only dictionary of field values keyed by field ID.
+    /// </summary>
+    /// <value>
+    /// A read-only dictionary where keys are field IDs and values are <see cref="ContentFieldValue"/> instances.
+    /// </value>
+    public IReadOnlyDictionary<Guid, ContentFieldValue> Values => _values.AsReadOnly();
+
+    internal void SetInternalFieldValue(Guid fieldId, object? value)
     {
-        if (!ContentType.HasField(fieldId))
+        if (_values.TryGetValue(fieldId, out ContentFieldValue? existing) && existing is not null)
         {
-            return Result<object>.Failure(
-                Error.NotFound(
-                    $"Field with guid '{fieldId}' not in ContentType '{ContentType.Name}'"
-                )
-            );
+            existing.SetValue(value);
         }
-        return Result<object>.Success(Values[fieldId].Value);
+        else
+        {
+            _values[fieldId] = new ContentFieldValue(value);
+        }
     }
 }
+
+/// <summary>
+/// Represents a lightweight projection of a content item for paged lists and summary views.
+/// </summary>
+/// <param name="Id">The unique identifier of the content item.</param>
+/// <param name="Title">The title of the content item.</param>
+public record PagedContentItem(Guid Id, string Title);

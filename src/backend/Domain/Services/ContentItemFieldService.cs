@@ -21,7 +21,7 @@ public static class ContentItemFieldService
     /// <returns>
     /// A <see cref="Result"/> indicating success or failure.
     /// Returns <see cref="Result.Failure"/> if the field doesn't exist in the content type.
-    /// Returns <see cref="Result.ValidationFailure"/> if validation fails after transformation.
+    /// Returns <see cref="Result.FieldValidationFailure"/> if validation fails after transformation.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// Thrown when <paramref name="item"/> or <paramref name="type"/> is null.
@@ -55,14 +55,13 @@ public static class ContentItemFieldService
                 Error.Infrastructure($"Transformation failed for field '{fieldId}': {ex.Message}")
             );
         }
-        object? transformed = field.ApplyTransformers(rawValue);
-        ValidationResult validation = field.Validate(transformed);
+        ValidationResult validation = field.Validate(transformedValue);
         if (validation.IsInvalid)
         {
-            return Result.ValidationFailure(validation);
+            return Result.FieldValidationFailure(validation);
         }
 
-        item.SetInternalFieldValue(fieldId, transformed);
+        item.SetInternalFieldValue(fieldId, transformedValue);
         return Result.Success();
     }
 }
