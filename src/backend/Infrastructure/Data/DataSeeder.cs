@@ -2,6 +2,7 @@ using Domain.Users;
 using Infrastructure.Users;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 
 namespace Infrastructure.Data;
 
@@ -24,10 +25,12 @@ public static class AdminData
 /// <param name="context">The application database context for domain entity operations.</param>
 /// <param name="userManager">The ASP.NET Core Identity user manager for user operations.</param>
 /// <param name="roleManager">The ASP.NET Core Identity role manager for role operations.</param>
+/// <param name="environment">The hosting environment to determine seeding behavior.</param>
 public class DataSeeder(
     AppDbContext context,
     UserManager<AppUser> userManager,
-    RoleManager<AppRole> roleManager
+    RoleManager<AppRole> roleManager,
+    IHostEnvironment environment
 )
 {
     private const string ADMIN_ROLE_NAME = "Admin";
@@ -35,6 +38,8 @@ public class DataSeeder(
     private const string ADMIN_PASSWORD = "Admin@123";
     private const string ADMIN_DISPLAY_NAME = "admin";
 
+    private const string DEV_USER_PASSWORD = "DevUser@123";
+    private const int DEV_USER_COUNT = 10;
     private readonly AppDbContext _context = context;
     private readonly UserManager<AppUser> _userManager = userManager;
     private readonly RoleManager<AppRole> _roleManager = roleManager;
@@ -48,6 +53,10 @@ public class DataSeeder(
         await SeedDomainDataAsync();
         await SeedRolesAsync();
         await SeedIdentityDataAsync();
+        if (environment.IsDevelopment())
+        {
+            await SeedDevelopmentUsersAsync(DEV_USER_COUNT);
+        }
     }
 
     /// <summary>
@@ -102,5 +111,46 @@ public class DataSeeder(
             _context.Set<User>().Add(new User(AdminData.AdminId, ADMIN_EMAIL, ADMIN_DISPLAY_NAME));
             await _context.SaveChangesAsync();
         }
+    }
+
+    private async Task SeedDevelopmentUsersAsync(int count)
+    {
+        // Prevent reseeding if they already exist.
+        bool anyDevUsersExist = await _userManager.Users.AnyAsync(u =>
+            u.Email!.EndsWith("@test.com")
+        );
+
+        if (anyDevUsersExist)
+        {
+            return;
+        }
+
+        for (int i = 1; i <= count; i++)
+        {
+            var userId = Guid.NewGuid();
+            string email = $"user{i}@test.com";
+            string displayName = $"user{i}";
+
+            // Identity user.
+            var identityUser = new AppUser
+            {
+                Id = userId,
+                UserName = email,
+                Email = email,
+                EmailConfirmed = true,
+            };
+
+            IdentityResult result = await _userManager.CreateAsync(identityUser, DEV_USER_PASSWORD);
+
+            if (!result.Succeeded)
+            {
+                continue;
+            }
+
+            // Domain user.
+            _context.Set<User>().Add(new User(userId, email, displayName));
+        }
+
+        await _context.SaveChangesAsync();
     }
 }
