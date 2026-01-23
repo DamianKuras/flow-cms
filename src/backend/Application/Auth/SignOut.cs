@@ -29,7 +29,7 @@ public sealed class SignOutCommandHandler(
     /// <returns>
     /// A command response containing the user ID if successful, or an error if the token is not found or invalid.
     /// </returns>
-    public async Task<CommandResponse<Guid>> Handle(
+    public async Task<Result<Guid>> Handle(
         SignOutCommand command,
         CancellationToken cancellationToken
     )
@@ -39,9 +39,7 @@ public sealed class SignOutCommandHandler(
         if (string.IsNullOrWhiteSpace(command.RefreshToken))
         {
             logger.LogWarning("Validation failed for SignOutCommand: Refresh token is empty");
-            return CommandResponse<Guid>.Failure(
-                Error.Validation("Refresh token cannot be empty.")
-            );
+            return Result<Guid>.Failure(Error.Validation("Refresh token cannot be empty."));
         }
 
         // Revoke token.
@@ -53,7 +51,7 @@ public sealed class SignOutCommandHandler(
         if (token is null)
         {
             logger.LogWarning("SignOut failed: Refresh token not found.");
-            return CommandResponse<Guid>.Failure(Error.Unauthorized("Refresh token not found."));
+            return Result<Guid>.Failure(Error.Unauthorized("Refresh token not found."));
         }
 
         if (token.IsRevoked)
@@ -62,7 +60,7 @@ public sealed class SignOutCommandHandler(
                 "Refresh token already revoked for UserId={UserId}",
                 token.UserId
             );
-            return CommandResponse<Guid>.Success(token.UserId);
+            return Result<Guid>.Success(token.UserId);
         }
 
         if (token.ExpiresOnUtc < DateTime.UtcNow)
@@ -72,16 +70,16 @@ public sealed class SignOutCommandHandler(
                 token.UserId,
                 token.ExpiresOnUtc
             );
-            return CommandResponse<Guid>.Failure(Error.Unauthorized("Refresh token has expired."));
+            return Result<Guid>.Failure(Error.Unauthorized("Refresh token has expired."));
         }
 
         logger.LogInformation("Revoking refresh token for UserId={UserId}", token.UserId);
-        token.IsRevoked = true;
+        token.Revoke();
 
         await refreshTokenRepository.SaveChangesAsync(cancellationToken);
 
         logger.LogInformation("Successfully signed out UserId={UserId}", token.UserId);
 
-        return CommandResponse<Guid>.Success(token.UserId);
+        return Result<Guid>.Success(token.UserId);
     }
 }

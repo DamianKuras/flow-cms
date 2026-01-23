@@ -45,7 +45,7 @@ public sealed class GetContentTypesHandler(
         CancellationToken cancellationToken
     )
     {
-        bool allowed = await authorizationService.IsAllowedForAllAsync(
+        bool allowed = await authorizationService.IsAllowedForTypeAsync(
             CmsAction.List,
             ResourceType.ContentType,
             cancellationToken
