@@ -11,7 +11,7 @@ public record ContentItemDto(
     string Name,
     Guid ContentTypeId,
     string Status,
-    Dictionary<Guid, ContentFieldValueDto> Values
+    Dictionary<string, ContentFieldValueDto> Values
 );
 
 /// <summary>
@@ -28,9 +28,9 @@ public record ContentItemListDto(Guid Id, Guid ContentTypeId, string Status);
 /// Create content item request DTO.
 /// </summary>
 public record CreateContentItemDto(
-    string Name,
+    string Title,
     Guid ContentTypeId,
-    Dictionary<Guid, object?>? Values
+    Dictionary<string, JsonElement?> Values
 );
 
 /// <summary>
