@@ -3,6 +3,7 @@ using Domain;
 using Domain.Common;
 using Domain.ContentTypes;
 using Domain.Fields;
+using Domain.Fields.Transformers;
 using Domain.Fields.Validations;
 
 namespace Application.ContentTypes;
@@ -58,7 +59,13 @@ public sealed class GetContentTypeHandler(IContentTypeRepository contentTypeRepo
     {
         var fields = contentType.Fields.Select(MapFieldToDto).ToList();
 
-        return new ContentTypeDto(contentType.Status.ToString(), fields, contentType.Version);
+        return new ContentTypeDto(
+            contentType.Id,
+            contentType.Name,
+            contentType.Status.ToString(),
+            fields,
+            contentType.Version
+        );
     }
 
     /// <summary>
@@ -69,13 +76,17 @@ public sealed class GetContentTypeHandler(IContentTypeRepository contentTypeRepo
     private static FieldDto MapFieldToDto(Field field)
     {
         var validationRules = field.ValidationRules.Select(MapValidationRuleToDto).ToList();
+        var transformationRules = field
+            .FieldTransformers.Select(MapTransformationRuleToDto)
+            .ToList();
 
         return new FieldDto(
             field.Id,
             field.Name,
             field.Type.ToString(),
             field.IsRequired,
-            validationRules
+            validationRules,
+            transformationRules
         );
     }
 
@@ -90,10 +101,30 @@ public sealed class GetContentTypeHandler(IContentTypeRepository contentTypeRepo
     private static ValidationRuleDto MapValidationRuleToDto(IValidationRule validationRule)
     {
         Dictionary<string, object>? parameters = validationRule
-            is ParameterizedRuleBase parameterizedRule
+            is ParameterizedValidationRuleBase parameterizedRule
             ? parameterizedRule.Parameters
             : null;
 
         return new ValidationRuleDto(validationRule.Type, parameters);
+    }
+
+    /// <summary>
+    /// Maps a validation rule to a validation rule DTO.
+    /// </summary>
+    /// <param name="transformationRule">The validation rule to map.</param>
+    /// <returns>
+    /// A DTO representing the validation rule with its type and parameters.
+    /// Parameters will be null for non-parameterized rules.
+    /// </returns>
+    private static TransformationRuleDto MapTransformationRuleToDto(
+        ITransformationRule transformationRule
+    )
+    {
+        Dictionary<string, object>? parameters = transformationRule
+            is ParameterizedTransformationRuleBase parameterizedRule
+            ? parameterizedRule.Parameters
+            : null;
+
+        return new TransformationRuleDto(transformationRule.Type, parameters);
     }
 }
