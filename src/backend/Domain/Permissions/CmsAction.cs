@@ -57,4 +57,9 @@ public enum CmsAction
     /// Archived content is typically hidden but not permanently deleted.
     /// </summary>
     Archive = 5,
+
+    /// <summary>
+    /// Permission to list
+    /// </summary>
+    List = 6,
 }
