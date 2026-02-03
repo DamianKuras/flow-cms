@@ -1,4 +1,3 @@
-using Application.Fields;
 using Application.Interfaces;
 using Domain.Common;
 using Domain.ContentTypes;
@@ -6,7 +5,6 @@ using Domain.Fields;
 using Domain.Fields.Transformers;
 using Domain.Fields.Validations;
 using Domain.Permissions;
-using Domain.Users;
 using Microsoft.Extensions.Logging;
 
 namespace Application.ContentTypes;
@@ -151,7 +149,12 @@ public sealed class CreateContentTypeCommandHandler(
             command.Name,
             cancellationToken
         );
-        int version = latestVersion ?? INITIAL_VERSION;
+        int version = INITIAL_VERSION;
+        if (latestVersion is int lv)
+        {
+            version = lv + 1;
+        }
+
         var contentTypeId = Guid.NewGuid();
 
         List<Field> domainFields = BuildDomainFields(command.Fields);
