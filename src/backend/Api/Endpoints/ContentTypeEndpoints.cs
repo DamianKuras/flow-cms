@@ -84,7 +84,7 @@ public static class ContentTypeEndpoints
         var query = new GetContentTypesQuery(paginationParameters, sort, status, filter);
         Result<GetContentTypeResponse> result = await handler.Handle(query, cancellationToken);
         return result.Match(onSuccess: response =>
-            Results.Ok(Mapper.MapPagedListToPagedResult(response.Data))
+            Results.Ok(ResponseMapper.MapPagedListToPagedResult(response.Data))
         );
     }
 

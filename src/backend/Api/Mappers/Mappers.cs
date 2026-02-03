@@ -6,7 +6,7 @@ namespace Api.Mappers;
 /// <summary>
 /// Provides mapping functions for converting between domain models and API response models.
 /// </summary>
-public static class Mappers
+public static class ResponseMapper
 {
     /// <summary>
     /// Maps a <see cref="PagedList{T}"/> from the domain layer to a <see cref="PagedResponse{T}"/> for API responses.
