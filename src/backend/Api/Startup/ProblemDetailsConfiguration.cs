@@ -45,7 +45,7 @@ public static class ProblemDetailsConfiguration
     }
 
     private static void SetDefaultTitle(Microsoft.AspNetCore.Mvc.ProblemDetails problemDetails) =>
-        problemDetails.Title = problemDetails.Status.Value switch
+        problemDetails.Title = (problemDetails.Status ?? 500) switch
         {
             400 => "Bad Request",
             401 => "Unauthorized",
@@ -95,12 +95,12 @@ public static class ProblemDetailsConfiguration
         Microsoft.AspNetCore.Mvc.ProblemDetails problemDetails
     )
     {
-        problemDetails.Extensions.TryAdd("exceptionType", context.Exception.GetType().Name);
-        problemDetails.Extensions.TryAdd("exceptionMessage", context.Exception.Message);
-        problemDetails.Extensions.TryAdd("stackTrace", context.Exception.StackTrace);
+        problemDetails.Extensions.TryAdd("exceptionType", context.Exception?.GetType().Name);
+        problemDetails.Extensions.TryAdd("exceptionMessage", context.Exception?.Message);
+        problemDetails.Extensions.TryAdd("stackTrace", context.Exception?.StackTrace);
 
         // Inner exception if present.
-        if (context.Exception.InnerException != null)
+        if (context.Exception?.InnerException != null)
         {
             problemDetails.Extensions.TryAdd(
                 "innerException",
