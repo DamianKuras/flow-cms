@@ -90,8 +90,8 @@ public sealed class SignInWithRefreshTokenCommandHandler(
 
         logger.LogInformation(
             "Valid refresh token found, revoking old token (TokenId: {TokenId}, UserId: {UserId})",
-            existingToken.Id,
-            existingToken.UserId
+            existingToken?.Id,
+            existingToken?.UserId
         );
 
         existingToken.Revoke();

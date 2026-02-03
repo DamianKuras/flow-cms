@@ -13,7 +13,7 @@ public sealed class RefreshToken
     /// <summary>
     /// Gets the cryptographically secure token string used for authentication.
     /// </summary>
-    public string Token { get; set; }
+    public string Token { get; set; } = "";
 
     /// <summary>
     /// Gets the identifier of the user to whom this refresh token belongs.
