@@ -20,4 +20,20 @@ public interface IAuthorizationService
     /// The task result contains <c>true</c> if the action is authorized; otherwise, <c>false</c>.
     /// </returns>
     Task<bool> IsAllowedAsync(CmsAction action, Resource resource, CancellationToken ct);
+
+    /// <summary>
+    /// Validates whether the current user is authorized to perform the specified action
+    /// at the resource type level (not tied to a specific resource instance).
+    /// </summary>
+    /// <remarks>
+    /// Use this for operations like:
+    /// - Listing all resources of a type (Read action)
+    /// - Creating new resources (Create action)
+    /// - Global management operations
+    /// </remarks>
+    Task<bool> IsAllowedForTypeAsync(
+        CmsAction action,
+        ResourceType resourceType,
+        CancellationToken ct
+    );
 }

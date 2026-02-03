@@ -73,4 +73,52 @@ public sealed class AuthorizationService(
 
         return isAllowed;
     }
+
+    /// <inheritdoc/>
+    public async Task<bool> IsAllowedForTypeAsync(
+        CmsAction action,
+        ResourceType resourceType,
+        CancellationToken ct
+    )
+    {
+        if (!userContext.IsAuthenticated)
+        {
+            logger.LogDebug(
+                "Authorization denied: User is not authenticated for action {Action} on all resources of type {ResourceType}",
+                action,
+                resourceType
+            );
+            return false;
+        }
+
+        if (await userContext.IsInRoleAsync(ADMIN_ROLE_NAME))
+        {
+            logger.LogDebug(
+                "Authorization granted: User {UserId} is in Admin role",
+                userContext.UserId
+            );
+            return true;
+        }
+
+        IReadOnlyCollection<PermissionRule> rules = await permissions.GetPermissionsAsync(
+            userContext.RoleIds,
+            ct
+        );
+
+        var actor = new UserActor(userContext.UserId);
+
+        bool isAllowed = evaluator.IsAllowedForAll(actor, action, resourceType, rules);
+
+        if (!isAllowed)
+        {
+            logger.LogWarning(
+                "Authorization denied: User {UserId} not permitted to perform {Action} on all resources of type {ResourceType}",
+                userContext.UserId,
+                action,
+                resourceType
+            );
+        }
+
+        return isAllowed;
+    }
 }
