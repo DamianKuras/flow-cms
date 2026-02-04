@@ -1,3 +1,5 @@
+using Domain.Common;
+
 namespace Domain.Users;
 
 /// <summary>
@@ -13,6 +15,17 @@ public interface IUserRepository
     /// <param name="ct">Cancellation token for async operation.</param>
     /// <returns>The user if found; otherwise, null.</returns>
     Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default);
+
+    /// <summary>
+    /// Retrieves a paginated list of users.
+    /// </summary>
+    /// <param name="paginationParameters">The pagination parameters (page number and page size).</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>A read-only list of paged users.</returns>
+    Task<IReadOnlyList<PagedUser>> Get(
+        PaginationParameters paginationParameters,
+        CancellationToken ct = default
+    );
 
     /// <summary>
     /// Retrieves a user by their email address.
@@ -31,4 +44,11 @@ public interface IUserRepository
     /// <param name="ct">Cancellation token for async operation.</param>
     /// <exception cref="InvalidOperationException">Thrown when user creation fails.</exception>
     Task AddAsync(User user, string password, CancellationToken ct = default);
+
+    /// <summary>
+    /// Counts the number of users.
+    /// </summary>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The total count of users.</returns>
+    Task<int> CountAsync(CancellationToken ct = default);
 }

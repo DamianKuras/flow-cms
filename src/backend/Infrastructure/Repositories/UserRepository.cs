@@ -1,3 +1,4 @@
+using Domain.Common;
 using Domain.Users;
 using Infrastructure.Data;
 using Infrastructure.Users;
@@ -51,6 +52,24 @@ public sealed class UserRepository(AppDbContext db, UserManager<AppUser> userMan
             await transaction.RollbackAsync(ct);
             throw;
         }
+    }
+
+    /// <inheritdoc/>
+    public async Task<int> CountAsync(CancellationToken ct = default) =>
+        await db.DomainUsers.CountAsync();
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<PagedUser>> Get(
+        PaginationParameters paginationParameters,
+        CancellationToken ct = default
+    )
+    {
+        List<PagedUser> users = await db
+            .DomainUsers.Skip((paginationParameters.Page - 1) * paginationParameters.PageSize)
+            .Take(paginationParameters.PageSize)
+            .Select(x => new PagedUser(x.Id, x.Email, x.DisplayName, x.DisplayName, x.CreatedAt))
+            .ToListAsync(ct);
+        return users;
     }
 
     /// <inheritdoc/>

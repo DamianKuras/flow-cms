@@ -16,8 +16,25 @@ public sealed class User
     /// <param name="id">The unique identifier for the user.</param>
     /// <param name="email">The user's email address.</param>
     /// <param name="displayName">The user's display name.</param>
+    /// <exception cref="ArgumentException">Thrown when email or display name is null or whitespace.</exception>
+    /// <exception cref="ArgumentException">Thrown when the id is empty.</exception>
     public User(Guid id, string email, string displayName)
     {
+        if (id == Guid.Empty)
+        {
+            throw new ArgumentException("User ID cannot be empty.", nameof(id));
+        }
+
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            throw new ArgumentException("Email cannot be empty.", nameof(email));
+        }
+
+        if (string.IsNullOrWhiteSpace(displayName))
+        {
+            throw new ArgumentException("Display name cannot be empty.", nameof(displayName));
+        }
+
         Id = id;
         Email = email;
         DisplayName = displayName;
@@ -91,4 +108,28 @@ public sealed class User
     /// Deactivates the user account by setting the status to disabled.
     /// </summary>
     public void Deactivate() => Status = UserStatus.Disabled;
+
+    /// <summary>
+    /// Determines whether the user possesses any of the specified administrative roles.
+    /// </summary>
+    /// <param name="adminRoleNames">A collection of role identifiers that represent administrative privileges.</param>
+    /// <returns><c>true</c> if the user is assigned at least one of the provided role IDs; otherwise, <c>false</c>.</returns>
+    public bool IsAdmin(IEnumerable<string> adminRoleNames) =>
+        Roles.Any(r => adminRoleNames.Contains(r.ToString(), StringComparer.OrdinalIgnoreCase));
 }
+
+/// <summary>
+/// A lightweight record representing a user in a paginated list or data transfer object.
+/// </summary>
+/// <param name="Id">The unique identifier of the user.</param>
+/// <param name="Email">The email address of the user.</param>
+/// <param name="DisplayName">The display name of the user.</param>
+/// <param name="Status">The string representation of the user's status (e.g., "Active", "Disabled").</param>
+/// <param name="CreatedAt">The UTC date and time when the user was created.</param>
+public record PagedUser(
+    Guid Id,
+    string Email,
+    string DisplayName,
+    string Status,
+    DateTime CreatedAt
+);
