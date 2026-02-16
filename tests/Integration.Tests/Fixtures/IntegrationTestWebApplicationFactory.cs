@@ -8,7 +8,7 @@ using Testcontainers.PostgreSql;
 namespace Integration.Tests.Fixtures;
 
 /// <summary>
-/// WebApplicationFactory for integration testing with PostgreSQL Testcontainer.
+/// WebApplicationFactory for integration testing with PostgreSQL Testcontainers.
 /// This factory manages the lifecycle of the test database and application.
 /// </summary>
 public class IntegrationTestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
@@ -44,7 +44,7 @@ public class IntegrationTestWebApplicationFactory : WebApplicationFactory<Progra
 
     /// <summary>
     /// Configures the web host to use the test database.
-    /// Override DbContext to use Testcontainer connection string.
+    /// Override DbContext to use Testcontainers connection string.
     /// </summary>
     protected override void ConfigureWebHost(IWebHostBuilder builder) =>
         builder.ConfigureServices(services =>
@@ -71,6 +71,9 @@ public class IntegrationTestWebApplicationFactory : WebApplicationFactory<Progra
         AppDbContext dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         // Delete all data
+        // await dbContext.ValidationRuleParameters.ExecuteDeleteAsync();
+        await dbContext.Fields.ExecuteDeleteAsync();
+        await dbContext.ContentItems.ExecuteDeleteAsync();
         await dbContext.ContentTypes.ExecuteDeleteAsync();
         await dbContext.SaveChangesAsync();
     }

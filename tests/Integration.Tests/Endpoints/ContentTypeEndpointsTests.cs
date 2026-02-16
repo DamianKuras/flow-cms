@@ -2,7 +2,6 @@ using System.Net;
 using System.Net.Http.Json;
 using Api.Responses;
 using Application.ContentTypes;
-using Application.Fields;
 using Domain.Common;
 using Domain.ContentTypes;
 using Domain.Fields;

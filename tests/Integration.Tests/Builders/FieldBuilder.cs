@@ -1,5 +1,4 @@
 using Application.ContentTypes;
-using Application.Fields;
 using Domain.Fields;
 
 namespace Integration.Tests.Builders;

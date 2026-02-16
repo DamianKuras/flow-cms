@@ -3,7 +3,6 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Application.ContentItems;
 using Application.ContentTypes;
-using Application.Fields;
 using Integration.Tests.Api;
 using Integration.Tests.Authentication;
 using Integration.Tests.Builders;

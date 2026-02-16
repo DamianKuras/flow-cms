@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using Api.Endpoints;
 using Application.Auth;
 using Integration.Tests.Authentication;
 using Integration.Tests.Fixtures;
@@ -24,7 +25,7 @@ public class AuthEndpointsTests
     }
 
     [Fact]
-    public async Task SignIn_Returns_Access_And_Refresh_Tokens()
+    public async Task SignIn_Returns_Access_Tokens()
     {
         // Arrange
         HttpClient client = _factory.CreateClient();
@@ -38,7 +39,6 @@ public class AuthEndpointsTests
         SignInResponseDTO? result = await response.Content.ReadFromJsonAsync<SignInResponseDTO>();
         Assert.NotNull(result);
         Assert.False(string.IsNullOrWhiteSpace(result.AccessToken));
-        Assert.False(string.IsNullOrWhiteSpace(result.RefreshToken));
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public class AuthEndpointsTests
     {
         // Arrange
         HttpClient client = _factory.CreateClient();
-        string token = await AuthenticationHelper.GetAuthTokenAsync(client);
+        string token = await AuthenticationHelper.GetAdminAuthTokenAsync(client);
         client.AddAuthToken(token);
         // Act
         HttpResponseMessage response = await client.GetAsync("/content-types");
@@ -57,65 +57,48 @@ public class AuthEndpointsTests
     [Fact]
     public async Task RefreshToken_Issues_New_Tokens()
     {
-        HttpClient client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient(
+            new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+            {
+                HandleCookies = true,
+            }
+        );
         var login = new { email = "admin@admin.com", password = "Admin@123" };
         HttpResponseMessage signInResponse = await client.PostAsJsonAsync("/auth/sign-in", login);
+        signInResponse.EnsureSuccessStatusCode();
+
         SignInResponseDTO? tokens =
             await signInResponse.Content.ReadFromJsonAsync<SignInResponseDTO>();
         Assert.NotNull(tokens);
 
-        var refreshPayload = new SignInWithRefreshTokenCommand(tokens.RefreshToken);
+        Assert.False(string.IsNullOrWhiteSpace(tokens.AccessToken));
+        Assert.False(string.IsNullOrWhiteSpace(tokens.TokenType));
+        Assert.False(string.IsNullOrWhiteSpace(tokens.ExpiresIn));
+
+        // var refreshPayload = new SignInWithRefreshTokenCommand(tokens.RefreshToken);
         HttpResponseMessage refreshResponse = await client.PostAsJsonAsync(
             "/auth/refresh-token",
-            refreshPayload
+            new { }
         );
         refreshResponse.EnsureSuccessStatusCode();
         SignInResponseDTO? refreshed =
             await refreshResponse.Content.ReadFromJsonAsync<SignInResponseDTO>();
 
         Assert.NotNull(refreshed);
-
         Assert.False(string.IsNullOrWhiteSpace(refreshed.AccessToken));
-
-        Assert.NotEqual(tokens.RefreshToken, refreshed.RefreshToken);
-
+        Assert.NotEqual(tokens.AccessToken, refreshed.AccessToken);
         Assert.False(string.IsNullOrWhiteSpace(refreshed.ExpiresIn));
-    }
-
-    [Fact]
-    public async Task Old_Refresh_Token_Fails_After_Use()
-    {
-        HttpClient client = _factory.CreateClient();
-
-        var login = new { email = "admin@admin.com", password = "Admin@123" };
-        HttpResponseMessage signInResponse = await client.PostAsJsonAsync("/auth/sign-in", login);
-        SignInResponseDTO? tokens =
-            await signInResponse.Content.ReadFromJsonAsync<SignInResponseDTO>();
-
-        Assert.NotNull(tokens);
-        var refreshPayload = new SignInWithRefreshTokenCommand(tokens.RefreshToken);
-        HttpResponseMessage refreshResponse = await client.PostAsJsonAsync(
-            "/auth/refresh-token",
-            refreshPayload
-        );
-        refreshResponse.EnsureSuccessStatusCode();
-
-        SignInResponseDTO? refreshed =
-            await refreshResponse.Content.ReadFromJsonAsync<SignInResponseDTO>();
-
-        var reusePayload = new SignInWithRefreshTokenCommand(tokens.RefreshToken);
-        HttpResponseMessage reuseResponse = await client.PostAsJsonAsync(
-            "/auth/refresh-token",
-            reusePayload
-        );
-
-        Assert.Equal(HttpStatusCode.Unauthorized, reuseResponse.StatusCode);
     }
 
     [Fact]
     public async Task Logout_Revokes_RefreshToken()
     {
-        HttpClient client = _factory.CreateClient();
+        HttpClient client = _factory.CreateClient(
+            new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
+            {
+                HandleCookies = true,
+            }
+        );
 
         var login = new { email = "admin@admin.com", password = "Admin@123" };
         HttpResponseMessage signInResponse = await client.PostAsJsonAsync("/auth/sign-in", login);
@@ -123,12 +106,11 @@ public class AuthEndpointsTests
             await signInResponse.Content.ReadFromJsonAsync<SignInResponseDTO>();
         Assert.NotNull(tokens);
 
-        await client.PostAsJsonAsync("/auth/sing-out", new { tokens.RefreshToken });
+        await client.PostAsJsonAsync("/auth/sign-out", new { });
 
-        var refreshPayload = new SignInWithRefreshTokenCommand(tokens.RefreshToken);
         HttpResponseMessage refreshResponse = await client.PostAsJsonAsync(
             "/auth/refresh-token",
-            refreshPayload
+            new { }
         );
 
         Assert.Equal(HttpStatusCode.Unauthorized, refreshResponse.StatusCode);

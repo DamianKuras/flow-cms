@@ -24,7 +24,7 @@ public class ContentItemSetFieldValueTests
         Guid? fieldId = null,
         string name = DEFAULT_FIELD_NAME,
         IValidationRule[]? validationRules = null,
-        IFieldTransformer[]? transformers = null
+        ITransformationRule[]? transformers = null
     ) =>
         new Field(
             fieldId ?? Guid.NewGuid(),
@@ -32,7 +32,7 @@ public class ContentItemSetFieldValueTests
             name,
             false,
             validationRules ?? Array.Empty<IValidationRule>(),
-            transformers ?? Array.Empty<IFieldTransformer>()
+            transformers ?? Array.Empty<ITransformationRule>()
         );
 
     private static ContentType CreateContentType(
@@ -49,7 +49,7 @@ public class ContentItemSetFieldValueTests
 
     private static (ContentItem item, ContentType type, Guid fieldId) CreateTestContext(
         IValidationRule[]? validationRules = null,
-        IFieldTransformer[]? transformers = null
+        ITransformationRule[]? transformers = null
     )
     {
         var fieldId = Guid.NewGuid();
@@ -149,7 +149,7 @@ public class ContentItemSetFieldValueTests
     public void SetValue_WithSingleTransformer_AppliesTransformation()
     {
         // Arrange
-        var transformers = new IFieldTransformer[] { new LowercaseTransformer() };
+        var transformers = new ITransformationRule[] { new LowercaseTransformer() };
         (ContentItem? contentItem, ContentType? contentType, Guid fieldId) = CreateTestContext(
             transformers: transformers
         );
@@ -171,7 +171,7 @@ public class ContentItemSetFieldValueTests
     public void SetValue_WithMultipleTransformers_AppliesInOrder()
     {
         // Arrange - Assuming you have a TrimTransformer or similar
-        var transformers = new IFieldTransformer[]
+        var transformers = new ITransformationRule[]
         {
             new LowercaseTransformer(),
             // Add second transformer to test chaining if available
@@ -203,7 +203,7 @@ public class ContentItemSetFieldValueTests
     {
         // Arrange - Uppercase input should pass after lowercase transformation
         var validationRules = new IValidationRule[] { new IsLowercaseRule() };
-        var transformers = new IFieldTransformer[] { new LowercaseTransformer() };
+        var transformers = new ITransformationRule[] { new LowercaseTransformer() };
         (ContentItem? contentItem, ContentType? contentType, Guid fieldId) = CreateTestContext(
             validationRules,
             transformers
@@ -238,12 +238,9 @@ public class ContentItemSetFieldValueTests
             fieldId,
             "UPPERCASE TEXT"
         );
-
         // Assert
         Assert.True(result.IsFailure);
-        Assert.NotNull(result.Error);
-        // Verify it's specifically a field validation failure, not a generic failure
-        Assert.IsType<ValidationResult>(result.Error);
+        Assert.Equal(FailureKind.FieldValidation, result.FailureKind);
     }
 
     [Fact]
@@ -491,7 +488,7 @@ public class ContentItemSetFieldValueTests
     {
         // Arrange - Simulate a real-world scenario with transformation and validation
         var validationRules = new IValidationRule[] { new IsLowercaseRule() };
-        var transformers = new IFieldTransformer[] { new LowercaseTransformer() };
+        var transformers = new ITransformationRule[] { new LowercaseTransformer() };
         (ContentItem? contentItem, ContentType? contentType, Guid fieldId) = CreateTestContext(
             validationRules,
             transformers

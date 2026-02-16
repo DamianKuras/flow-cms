@@ -1,5 +1,4 @@
 using Application.ContentTypes;
-using Application.Fields;
 using Domain.Fields;
 
 namespace Integration.Tests.Helpers;
@@ -17,6 +16,18 @@ public class TestDataHelper
                     Name: "Title",
                     Type: FieldTypes.Text,
                     IsRequired: true,
+                    ValidationRules: new List<CreateValidationRuleDto>
+                    {
+                        new CreateValidationRuleDto(
+                            Type: "MaximumLengthValidationRule",
+                            Parameters: new Dictionary<string, object> { { "max-length", 256 } }
+                        ),
+                    }
+                ),
+                new CreateFieldDto(
+                    Name: "Body",
+                    Type: FieldTypes.Text,
+                    IsRequired: false,
                     ValidationRules: new List<CreateValidationRuleDto>
                     {
                         new CreateValidationRuleDto(
