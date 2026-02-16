@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { AnyFieldApi } from "@tanstack/react-form";
-import { FIELD_TYPES } from "../types";
+import { FIELD_TYPES } from "../../types";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ValidationRulesSection } from "./validation-rules";

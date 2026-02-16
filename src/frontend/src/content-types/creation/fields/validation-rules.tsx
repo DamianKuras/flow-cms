@@ -13,7 +13,7 @@ import {
   listValidationRuleTypes,
 } from "@/registry/validation-rule-registry";
 import { useStore, type AnyFieldApi } from "@tanstack/react-form";
-import type { ContentTypeFormData } from "../types";
+import type { ContentTypeCreateFormData } from "../../types";
 
 interface ValidationRulesSectionProps {
   form: any;
@@ -90,7 +90,7 @@ function ValidationRuleRow({
   rulesForField,
 }: ValidationRuleRowProps) {
   const currentFieldType = useStore(form.store, (state) => {
-    const formState = state as { values: ContentTypeFormData };
+    const formState = state as { values: ContentTypeCreateFormData };
     return formState?.values?.fields?.[fieldIndex]?.type;
   });
   const allowedTypes = getAllowedValidations(currentFieldType);

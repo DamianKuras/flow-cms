@@ -16,4 +16,5 @@ export type PagedContentType = {
   name: string;
   status: string;
   version: string;
+  createdAt: string;
 };

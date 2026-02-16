@@ -13,7 +13,7 @@ import {
   listTransformationRuleTypes,
 } from "@/registry/transformation-rule-registry";
 import { useStore, type AnyFieldApi } from "@tanstack/react-form";
-import type { ContentTypeFormData } from "../types";
+import type { ContentTypeCreateFormData } from "../../types";
 
 interface TransformationRulesSectionProps {
   form: any;
@@ -85,7 +85,7 @@ function TransformationRuleRow({
   ruleIndex,
 }: TransformationRuleRowProps) {
   const currentFieldType = useStore(form.store, (state) => {
-    const formState = state as { values: ContentTypeFormData };
+    const formState = state as { values: ContentTypeCreateFormData };
     return formState?.values?.fields?.[fieldIndex]?.type;
   });
 

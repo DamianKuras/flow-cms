@@ -10,7 +10,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { useContentTypes } from "@/hooks/use-content-types";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 
 import { BookOpen } from "lucide-react";
 import { Button } from "./ui/button";
@@ -24,15 +24,19 @@ const SidebarData = {
 
 export function AppSidebar() {
   const { status, data, error, isFetching } = useContentTypes();
-
+  const navigate = useNavigate();
+  function logout() {
+    // authStore.clear();
+    // navigate({ to: "/login" });
+  }
   return (
     <Sidebar>
-      <SidebarHeader>
+      {/* <SidebarHeader>
         <p className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
           <BookOpen className="group-data-[collapsible=icon]:w-full" />
           <span className="group-data-[collapsible=icon]:hidden">Flow CMS</span>
         </p>
-      </SidebarHeader>
+      </SidebarHeader> */}
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Main</SidebarGroupLabel>
@@ -48,6 +52,7 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
         <SidebarGroup>
           <SidebarGroupLabel>Content Types</SidebarGroupLabel>
 
@@ -59,10 +64,10 @@ export function AppSidebar() {
                 <span>Error: {error.message}</span>
               ) : (
                 <>
-                  {data.map((content_type) => (
+                  {data.data.map((content_type) => (
                     <SidebarMenuItem key={content_type.name}>
                       <SidebarMenuButton>
-                        <Link to={`/content/${content_type.id}`}>
+                        <Link to={`/content-types/${content_type.id}/items`}>
                           {content_type.name}
                         </Link>
                       </SidebarMenuButton>
@@ -73,14 +78,35 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
         <SidebarGroup>
           <SidebarMenuItem>
-            <SidebarGroupLabel>Content Types Management</SidebarGroupLabel>
-
             <Button>
-              <Link to="/content_types_management/create">
-                Add new content type
-              </Link>
+              <Link to="/content-types"> See all content types</Link>
+            </Button>
+          </SidebarMenuItem>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarMenuItem>
+            <Button>
+              <Link to="/content-types/new">Add new content type.</Link>
+            </Button>
+          </SidebarMenuItem>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarMenuItem>
+            <Button>
+              <Link to="/users"> See all users.</Link>
+            </Button>
+          </SidebarMenuItem>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarMenuItem>
+            <Button>
+              <Link to="/users/new"> Add new user.</Link>
             </Button>
           </SidebarMenuItem>
         </SidebarGroup>

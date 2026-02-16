@@ -62,6 +62,7 @@ export default function ContentTypesList() {
     debouncedSearch,
     statusFilter !== "all" ? statusFilter : undefined,
   );
+  console.log(data);
 
   const columns = React.useMemo<ColumnDef<PagedContentType>[]>(
     () => [
@@ -85,6 +86,21 @@ export default function ContentTypesList() {
               {status}
             </span>
           );
+        },
+      },
+      {
+        accessorKey: "createdAt",
+        header: "Created At",
+        cell: ({ row }) => {
+          const value = row.getValue("createdAt") as string;
+          const date = new Date(value);
+          return date.toLocaleDateString(undefined, {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
         },
       },
       {
