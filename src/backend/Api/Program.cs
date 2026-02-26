@@ -1,6 +1,7 @@
 using Api.Startup;
 using Application.ContentTypes;
 using Application.Interfaces;
+using Domain.Permissions;
 using Infrastructure;
 using Infrastructure.Startup;
 using Infrastructure.Users;
@@ -24,6 +25,8 @@ try
     builder.ConfigureCors();
 
     builder.Services.AddInfrastructure(builder.Configuration);
+
+    builder.Services.AddScoped<IPermissionEvaluator, PermissionEvaluator>();
 
     // Auto-register all query and command handlers using Scrutor.
     builder.Services.Scan(scan =>
@@ -57,6 +60,8 @@ try
         app.MapOpenApi();
 
         app.UseSwaggerUI(options => options.SwaggerEndpoint("/openapi/v1.json", "v1"));
+
+        app.UseDeveloperExceptionPage();
     }
 
     if (!app.Environment.IsDevelopment())
