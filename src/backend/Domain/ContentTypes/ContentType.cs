@@ -80,7 +80,7 @@ public class ContentType : ISoftDeletable
     /// <summary>
     /// Gets the current publication status of the content type.
     /// </summary>
-    public ContentTypeStatus Status { get; }
+    public ContentTypeStatus Status { get; private set; }
 
     /// <summary>
     /// Gets the ordered collection of fields that define the schema for this content type.
@@ -117,6 +117,11 @@ public class ContentType : ISoftDeletable
         IsDeleted = true;
         DeletedOnUtc = DateTime.UtcNow;
     }
+
+    /// <summary>
+    /// Archives the content type, preventing further modifications or usage in new content items.
+    /// </summary>
+    public void Archive() => Status = ContentTypeStatus.ARCHIVE;
 
     /// <summary>
     /// Determines whether this content type contains a field with the specified identifier.
@@ -166,4 +171,11 @@ public class ContentType : ISoftDeletable
 /// <param name="Name">The name of the content type.</param>
 /// <param name="Status">The publication status as a string (e.g., "DRAFT", "PUBLISHED").</param>
 /// <param name="Version">The version number of the content type.</param>
-public record PagedContentType(Guid Id, string Name, string Status, int Version);
+/// <param name="CreatedAt">The date of creation of the content type.</param>
+public record PagedContentType(
+    Guid Id,
+    string Name,
+    string Status,
+    int Version,
+    DateTime CreatedAt
+);
