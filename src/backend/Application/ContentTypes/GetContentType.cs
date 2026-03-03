@@ -6,6 +6,9 @@ using Domain.Fields;
 using Domain.Fields.Transformers;
 using Domain.Fields.Validations;
 
+using Domain.Permissions;
+using Microsoft.Extensions.Logging;
+
 namespace Application.ContentTypes;
 
 /// <summary>
@@ -18,8 +21,13 @@ public sealed record GetContentTypeQuery(Guid Id);
 /// Handles the retrieval of a content type and its associated fields and validation rules.
 /// </summary>
 /// <param name="contentTypeRepository">Content type repository.</param>
-public sealed class GetContentTypeHandler(IContentTypeRepository contentTypeRepository)
-    : IQueryHandler<GetContentTypeQuery, ContentTypeDto>
+/// <param name="authorizationService">Service for role-based authorization.</param>
+/// <param name="logger">Logger for diagnostics.</param>
+public sealed class GetContentTypeHandler(
+    IContentTypeRepository contentTypeRepository,
+    IAuthorizationService authorizationService,
+    ILogger<GetContentTypeHandler> logger
+) : IQueryHandler<GetContentTypeQuery, ContentTypeDto>
 {
     /// <summary>
     /// Handles the query to retrieve a content type by ID.
@@ -44,6 +52,22 @@ public sealed class GetContentTypeHandler(IContentTypeRepository contentTypeRepo
             return Result<ContentTypeDto>.Failure(
                 Error.NotFound($"ContentType with ID '{query.Id}' was not found")
             );
+        }
+
+        bool allowed = await authorizationService.IsAllowedForTypeAsync(
+            CmsAction.Read,
+            ResourceType.ContentType,
+            cancellationToken
+        );
+
+        if (!allowed)
+        {
+            logger.LogWarning(
+                "Authorization failed for GetContentType ContentTypeName={Name}",
+                contentType.Name
+            );
+
+            return Result<ContentTypeDto>.Failure(Error.Forbidden("Forbidden"));
         }
 
         ContentTypeDto dto = MapToDto(contentType);
