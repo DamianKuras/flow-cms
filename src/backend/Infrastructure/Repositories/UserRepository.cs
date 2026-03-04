@@ -56,7 +56,7 @@ public sealed class UserRepository(AppDbContext db, UserManager<AppUser> userMan
 
     /// <inheritdoc/>
     public async Task<int> CountAsync(CancellationToken ct = default) =>
-        await db.DomainUsers.CountAsync();
+        await userManager.Users.CountAsync(ct);
 
     /// <inheritdoc/>
     public async Task<IReadOnlyList<PagedUser>> Get(
