@@ -9,7 +9,7 @@ namespace E2E.Tests;
 /// Creates a fresh browser context and page per test, resets the database,
 /// and provides a login helper.
 /// </summary>
-[Collection(E2ECollectionFixture.Name)]
+[Collection(E2ECollectionFixture.NAME)]
 public abstract class E2ETestBase : IAsyncLifetime
 {
     protected readonly E2ECollectionFixture _fixture;
