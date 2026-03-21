@@ -43,6 +43,42 @@ dotnet ef database update --project ./src/backend/Infrastructure --startup-proje
 dotnet run --project ./src/backend/Api
 ```
 
+### Frontend
+
+1. **Install dependencies:**
+
+   ```bash
+   cd src/frontend
+   npm install
+   ```
+
+2. **Start dev server:**
+
+   ```bash
+   npm run dev
+   ```
+
+### Frontend Tests
+
+Frontend tests use [Vitest](https://vitest.dev/) with [Testing Library](https://testing-library.com/).
+
+1. **Run all tests once:**
+
+   ```bash
+   cd src/frontend
+   npm test
+   ```
+
+2. **Run in watch mode (re-runs on file changes):**
+
+   ```bash
+   npm run test:watch
+   ```
+
+Tests are colocated with the source files they cover (e.g. `schema.test.ts` next to `schema.ts`).
+
+---
+
 ### Backend Tests
 
 This project contains both **Unit Tests** and **Integration Tests**.
@@ -69,6 +105,50 @@ The **Integration.Tests** project uses **Testcontainers**. You must have **Docke
    ```bash
    dotnet test ./tests/Application.Tests
    ```
+
+### E2E Tests (Playwright .NET)
+
+The `E2E.Tests` project runs full-stack browser tests: a real Chromium browser talks to the React frontend, which talks to an ASP.NET Core API backed by a PostgreSQL Testcontainers database — all started automatically by the test runner.
+
+#### ⚠️ Requirements
+
+- **Docker** — for the PostgreSQL Testcontainers database
+- **Node.js / npm** — to start the Vite dev server
+- **Playwright browsers** — one-time install (see below)
+
+#### One-time: install Playwright browser binaries
+
+After building the project, run:
+
+```bash
+dotnet build tests/E2E.Tests
+pwsh tests/E2E.Tests/bin/Debug/net10.0/playwright.ps1 install chromium
+```
+
+On Linux/macOS replace `pwsh` with `pwsh` or use:
+
+```bash
+dotnet tool install --global Microsoft.Playwright.CLI
+playwright install chromium
+```
+
+#### Run E2E tests
+
+```bash
+dotnet test tests/E2E.Tests
+```
+
+The test fixture automatically:
+1. Starts a PostgreSQL container and runs migrations
+2. Starts the ASP.NET Core API on `http://localhost:5252`
+3. Starts the Vite frontend on `http://localhost:5173` (using `.env.e2e` so `VITE_CMS_API_URL` points to the test API)
+4. Launches a headless Chromium browser
+
+#### Run E2E tests headed (visible browser)
+
+To watch the browser during a test run, change `Headless = true` to `Headless = false` in `E2ECollectionFixture.cs`.
+
+---
 
 ## Validation Rules and Transformation Rules Plugin Guide
 
