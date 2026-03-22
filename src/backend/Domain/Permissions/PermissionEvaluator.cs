@@ -23,7 +23,8 @@ public interface IPermissionEvaluator
     );
 
     /// <summary>
-    /// Determines if the specified actor is allowed to perform the action on all resources of the specified type.
+    /// Determines if the specified actor is allowed to perform the action on all resources
+    /// of the specified type (type-level check, e.g. for list operations).
     /// </summary>
     /// <param name="actor">The actor requesting permission.</param>
     /// <param name="action">The action being requested.</param>
@@ -35,7 +36,7 @@ public interface IPermissionEvaluator
     /// typically used for list or index operations.
     /// </remarks>
     bool IsAllowedForAll(
-        UserActor actor,
+        IActor actor,
         CmsAction action,
         ResourceType resourceType,
         IReadOnlyCollection<PermissionRule> rules
@@ -55,9 +56,19 @@ public sealed class PermissionEvaluator : IPermissionEvaluator
         IEnumerable<PermissionRule> rules
     )
     {
-        IEnumerable<PermissionRule> relevant = rules
-            .Where(r => r.ActorType == actor.Type && r.Action == action && r.Resource == resource)
-            .ToList();
+        var rulesList = rules.ToList();
+
+        IEnumerable<PermissionRule> specific = rulesList.Where(r =>
+            r.ActorType == actor.Type && r.Action == action && r.AppliesToResource(resource)
+        );
+
+        IEnumerable<PermissionRule> typeLevel = rulesList.Where(r =>
+            r.ActorType == actor.Type
+            && r.Action == action
+            && r.AppliesToResourceType(resource.Type)
+        );
+
+        var relevant = specific.Concat(typeLevel).ToList();
 
         if (relevant.Any(r => r.Scope == PermissionScope.Deny))
         {
@@ -69,15 +80,17 @@ public sealed class PermissionEvaluator : IPermissionEvaluator
 
     /// <inheritdoc/>
     public bool IsAllowedForAll(
-        UserActor actor,
+        IActor actor,
         CmsAction action,
         ResourceType resourceType,
         IReadOnlyCollection<PermissionRule> rules
     )
     {
-        IEnumerable<PermissionRule> relevant = rules
+        var relevant = rules
             .Where(r =>
-                r.ActorType == actor.Type && r.Action == action && r.ResourceType == resourceType
+                r.ActorType == actor.Type
+                && r.Action == action
+                && r.AppliesToResourceType(resourceType)
             )
             .ToList();
 
