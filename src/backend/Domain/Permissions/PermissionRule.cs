@@ -2,37 +2,52 @@ namespace Domain.Permissions;
 
 /// <summary>
 /// Represents a permission rule that defines whether an actor type can perform
-/// a specific action on a resource.
+/// a specific action on a resource. Use <see cref="ForResource"/> or
+/// <see cref="ForResourceType"/> to construct instances.
 /// </summary>
-/// <param name="ActorType">The type of actor this rule applies to.</param>
-/// <param name="Action">The CMS action this rule governs.</param>
-/// <param name="Resource">The specific resource this rule applies to. Null if this is a type-level rule.</param>
-/// <param name="ResourceType">The resource type this rule applies to. Used for type-level permissions when Resource is null.</param>
-/// <param name="Scope">
-/// The permission scope indicating whether the action is allowed or denied.
-/// Defaults to Deny.
-/// </param>
-/// <remarks>
-/// Either Resource or ResourceType must be specified, but not both.
-/// - When Resource is specified: Rule applies to that specific resource instance
-/// - When ResourceType is specified: Rule applies to all resources of that type (type-level permission)
-/// </remarks>
-public sealed record PermissionRule(
-    ActorType ActorType,
-    CmsAction Action,
-    Resource? Resource,
-    ResourceType? ResourceType,
-    PermissionScope Scope = PermissionScope.Deny
-)
+public sealed record PermissionRule
 {
-    /// <summary>
-    /// Creates a permission rule for a specific resource instance.
-    /// </summary>
-    /// <param name="actorType">The type of actor this rule applies to.</param>
-    /// <param name="action">The CMS action being permitted or denied.</param>
-    /// <param name="resource">The specific resource instance this rule applies to.</param>
-    /// <param name="scope">The permission scope. Defaults to Allow for convenience in resource-specific grants.</param>
-    /// <returns>A new <see cref="PermissionRule"/> configured for a specific resource.</returns>
+    /// <summary>The type of actor this rule applies to.</summary>
+    public ActorType ActorType { get; }
+
+    /// <summary>The CMS action this rule governs.</summary>
+    public CmsAction Action { get; }
+
+    /// <summary>The specific resource this rule applies to.</summary>
+    public Resource? Resource { get; }
+
+    /// <summary>The resource type this rule applies to.</summary>
+    public ResourceType? ResourceType { get; }
+
+    /// <summary>Whether the action is allowed or denied.</summary>
+    public PermissionScope Scope { get; }
+
+    private PermissionRule(
+        ActorType actorType,
+        CmsAction action,
+        Resource? resource,
+        ResourceType? resourceType,
+        PermissionScope scope
+    )
+    {
+        if (resource is not null && resourceType is not null)
+        {
+            throw new ArgumentException("Specify either Resource or ResourceType, not both.");
+        }
+
+        if (resource is null && resourceType is null)
+        {
+            throw new ArgumentException("Either Resource or ResourceType must be specified.");
+        }
+
+        ActorType = actorType;
+        Action = action;
+        Resource = resource;
+        ResourceType = resourceType;
+        Scope = scope;
+    }
+
+    /// <summary>Creates a permission rule for a specific resource instance.</summary>
     public static PermissionRule ForResource(
         ActorType actorType,
         CmsAction action,
@@ -40,18 +55,17 @@ public sealed record PermissionRule(
         PermissionScope scope = PermissionScope.Allow
     ) => new(actorType, action, resource, null, scope);
 
-    /// <summary>
-    /// Creates a permission rule for all resources of a specific type (type-level permission).
-    /// </summary>
-    /// <param name="actorType">The type of actor this rule applies to.</param>
-    /// <param name="action">The CMS action being permitted or denied.</param>
-    /// <param name="resourceType">The resource type this rule applies to.</param>
-    /// <param name="scope">The permission scope. Defaults to Allow for convenience in type-level grants.</param>
-    /// <returns>A new <see cref="PermissionRule"/> configured for a resource type.</returns>
+    /// <summary>Creates a type-level permission rule that applies to all resources of a given type.</summary>
     public static PermissionRule ForResourceType(
         ActorType actorType,
         CmsAction action,
         ResourceType resourceType,
         PermissionScope scope = PermissionScope.Allow
     ) => new(actorType, action, null, resourceType, scope);
+
+    /// <summary>Returns true if this rule targets the given resource instance.</summary>
+    public bool AppliesToResource(Resource resource) => Resource == resource;
+
+    /// <summary>Returns true if this rule targets all resources of the given type.</summary>
+    public bool AppliesToResourceType(ResourceType type) => ResourceType == type;
 }
