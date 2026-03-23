@@ -3,6 +3,7 @@ using Infrastructure.Users;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -25,6 +26,13 @@ public static class SeedDataStartup
         using IServiceScope scope = app.ApplicationServices.CreateScope();
         IServiceProvider services = scope.ServiceProvider;
         ILogger<DataSeeder>? logger = services.GetService<ILogger<DataSeeder>>();
+
+        IConfiguration configuration = services.GetRequiredService<IConfiguration>();
+        if (configuration.GetValue<bool>("SkipAutoSeed"))
+        {
+            logger?.LogInformation("Skipping database seed (SkipAutoSeed=true)");
+            return;
+        }
 
         try
         {
