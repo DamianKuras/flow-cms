@@ -3,8 +3,10 @@ using Domain.ContentItems;
 using Domain.ContentTypes;
 using Domain.Fields.Transformers;
 using Domain.Fields.Validations;
+using Domain.Roles;
 using Domain.Users;
 using Infrastructure.Data;
+using Infrastructure.Extensions;
 using Infrastructure.Fields;
 using Infrastructure.Interceptors;
 using Infrastructure.Repositories;
@@ -62,6 +64,8 @@ public static class ServiceRegistration
         services.AddScoped<IContentItemRepository, ContentItemRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IRoleRepository, RoleRepository>();
+        services.AddScoped<IRolePermissionService, RolePermissionService>();
 
         string pluginsPath = Path.Combine(AppContext.BaseDirectory, "plugins");
         if (!Directory.Exists(pluginsPath))

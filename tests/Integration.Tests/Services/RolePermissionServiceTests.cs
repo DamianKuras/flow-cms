@@ -9,16 +9,13 @@ using Xunit;
 
 namespace Integration.Tests.Services;
 
-public class RolePermissionServiceTests
+public sealed class RolePermissionServiceTests
     : IClassFixture<IntegrationTestWebApplicationFactory>,
         IAsyncLifetime
 {
     private readonly IntegrationTestWebApplicationFactory _factory;
 
-    public RolePermissionServiceTests(IntegrationTestWebApplicationFactory factory)
-    {
-        _factory = factory;
-    }
+    public RolePermissionServiceTests(IntegrationTestWebApplicationFactory factory) => _factory = factory;
 
     public Task DisposeAsync() => Task.CompletedTask;
 
@@ -28,8 +25,8 @@ public class RolePermissionServiceTests
     public async Task AddPermissionToRoleAsync_ShouldAddPermissionCorrectly()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        using IServiceScope scope = _factory.Services.CreateScope();
+        AppDbContext dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var service = new RolePermissionService(dbContext);
 
         var roleId = Guid.NewGuid();
@@ -48,7 +45,7 @@ public class RolePermissionServiceTests
         await service.AddPermissionToRoleAsync(roleId, rule);
 
         // Assert
-        var entity = await dbContext.RolePermissions.SingleOrDefaultAsync(rp => rp.RoleId == roleId);
+        RolePermissionEntity? entity = await dbContext.RolePermissions.SingleOrDefaultAsync(rp => rp.RoleId == roleId);
         Assert.NotNull(entity);
         Assert.Equal(CmsAction.Create, entity.Action);
         Assert.Equal(global::Infrastructure.Persistence.Permissions.ResourceType.ContentItem, entity.ResourceType);
@@ -60,8 +57,8 @@ public class RolePermissionServiceTests
     public async Task RemovePermissionFromRoleAsync_ShouldRemovePermission_WhenItExists()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        using IServiceScope scope = _factory.Services.CreateScope();
+        AppDbContext dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var service = new RolePermissionService(dbContext);
 
         var roleId = Guid.NewGuid();
@@ -72,6 +69,7 @@ public class RolePermissionServiceTests
         
         var entity = new RolePermissionEntity
         {
+            Id = Guid.NewGuid(),
             RoleId = roleId,
             Action = CmsAction.Delete,
             ResourceType = global::Infrastructure.Persistence.Permissions.ResourceType.ContentType,
@@ -92,7 +90,7 @@ public class RolePermissionServiceTests
         await service.RemovePermissionFromRoleAsync(roleId, rule);
 
         // Assert
-        var exists = await dbContext.RolePermissions.AnyAsync(rp => rp.RoleId == roleId);
+        bool exists = await dbContext.RolePermissions.AnyAsync(rp => rp.RoleId == roleId);
         Assert.False(exists);
     }
 
@@ -100,8 +98,8 @@ public class RolePermissionServiceTests
     public async Task RemovePermissionFromRoleAsync_ShouldDoNothing_WhenPermissionDoesNotExist()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        using IServiceScope scope = _factory.Services.CreateScope();
+        AppDbContext dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var service = new RolePermissionService(dbContext);
 
         var roleId = Guid.NewGuid();
@@ -117,10 +115,11 @@ public class RolePermissionServiceTests
             PermissionScope.Deny
         );
 
-        // Act & Assert (Should not throw)
+        // Act
         await service.RemovePermissionFromRoleAsync(roleId, rule);
-        
-        var count = await dbContext.RolePermissions.CountAsync();
+
+        // Assert
+        int count = await dbContext.RolePermissions.CountAsync();
         Assert.Equal(0, count);
     }
 
@@ -128,8 +127,8 @@ public class RolePermissionServiceTests
     public async Task AddPermissionToRoleAsync_ThrowsNotSupportedException_ForUnknownResource()
     {
         // Arrange
-        using var scope = _factory.Services.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        using IServiceScope scope = _factory.Services.CreateScope();
+        AppDbContext dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var service = new RolePermissionService(dbContext);
 
         var roleId = Guid.NewGuid();
@@ -143,6 +142,76 @@ public class RolePermissionServiceTests
 
         // Act & Assert
         await Assert.ThrowsAsync<NotSupportedException>(() => service.AddPermissionToRoleAsync(roleId, rule));
+    }
+
+    [Fact]
+    public async Task AddPermissionToRoleAsync_TypeLevelPermission_StoresNullResourceId()
+    {
+        // Arrange
+        using IServiceScope scope = _factory.Services.CreateScope();
+        AppDbContext dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var service = new RolePermissionService(dbContext);
+
+        var roleId = Guid.NewGuid();
+        var role = new global::Infrastructure.Users.AppRole { Id = roleId, Name = roleId.ToString(), NormalizedName = roleId.ToString() };
+        dbContext.Set<global::Infrastructure.Users.AppRole>().Add(role);
+        await dbContext.SaveChangesAsync();
+
+        var rule = PermissionRule.ForResourceType(
+            ActorType.User,
+            CmsAction.List,
+            Domain.Permissions.ResourceType.ContentType,
+            PermissionScope.Allow
+        );
+
+        // Act
+        await service.AddPermissionToRoleAsync(roleId, rule);
+
+        // Assert
+        RolePermissionEntity? entity = await dbContext.RolePermissions.SingleOrDefaultAsync(rp => rp.RoleId == roleId);
+        Assert.NotNull(entity);
+        Assert.Equal(CmsAction.List, entity.Action);
+        Assert.Equal(global::Infrastructure.Persistence.Permissions.ResourceType.ContentType, entity.ResourceType);
+        Assert.Null(entity.ResourceId);
+        Assert.Equal(PermissionScope.Allow, entity.Scope);
+    }
+
+    [Fact]
+    public async Task RemovePermissionFromRoleAsync_TypeLevelPermission_RemovesCorrectEntity()
+    {
+        // Arrange
+        using IServiceScope scope = _factory.Services.CreateScope();
+        AppDbContext dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var service = new RolePermissionService(dbContext);
+
+        var roleId = Guid.NewGuid();
+        var role = new global::Infrastructure.Users.AppRole { Id = roleId, Name = roleId.ToString(), NormalizedName = roleId.ToString() };
+        dbContext.Set<global::Infrastructure.Users.AppRole>().Add(role);
+        await dbContext.SaveChangesAsync();
+
+        dbContext.RolePermissions.Add(new RolePermissionEntity
+        {
+            Id = Guid.NewGuid(),
+            RoleId = roleId,
+            Action = CmsAction.List,
+            ResourceType = global::Infrastructure.Persistence.Permissions.ResourceType.ContentType,
+            ResourceId = null,
+            Scope = PermissionScope.Allow,
+        });
+        await dbContext.SaveChangesAsync();
+
+        var rule = PermissionRule.ForResourceType(
+            ActorType.User,
+            CmsAction.List,
+            Domain.Permissions.ResourceType.ContentType,
+            PermissionScope.Allow
+        );
+
+        // Act
+        await service.RemovePermissionFromRoleAsync(roleId, rule);
+
+        // Assert
+        Assert.False(await dbContext.RolePermissions.AnyAsync(rp => rp.RoleId == roleId));
     }
 
     private record UnknownResource : Resource

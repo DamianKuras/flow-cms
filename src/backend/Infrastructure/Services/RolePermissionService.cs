@@ -9,74 +9,104 @@ namespace Infrastructure.Services;
 /// <summary>
 /// Service responsible for managing permissions assigned to roles.
 /// </summary>
-/// <remarks>
-/// Interacts with the underlying AppDbContext to persist role permissions.
-/// </remarks>
 /// <param name="db">The database context used for data operations.</param>
-public class RolePermissionService(AppDbContext db) : IRolePermissionService
+public sealed class RolePermissionService(AppDbContext db) : IRolePermissionService
 {
-    private readonly AppDbContext _db = db;
-
-    /// <summary>
-    /// Adds a new permission rule for the specified role.
-    /// </summary>
-    /// <param name="roleId">The unique identifier of the role.</param>
-    /// <param name="rule">The permission rule to add.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <inheritdoc/>
     public async Task AddPermissionToRoleAsync(Guid roleId, PermissionRule rule)
     {
-        _db.RolePermissions.Add(
+        Persistence.Permissions.ResourceType resourceType = ToResourceType(rule);
+        Guid? resourceId = ToResourceId(rule);
+
+        bool exists = await db.RolePermissions.AnyAsync(rp =>
+            rp.RoleId == roleId
+            && rp.Action == rule.Action
+            && rp.ResourceType == resourceType
+            && rp.ResourceId == resourceId
+            && rp.Scope == rule.Scope
+        );
+
+        if (exists)
+            return;
+
+        db.RolePermissions.Add(
             new RolePermissionEntity
             {
+                Id = Guid.NewGuid(),
                 RoleId = roleId,
                 Action = rule.Action,
-                ResourceType = ToResourceType(rule.Resource),
-                ResourceId = ToResourceId(rule.Resource),
+                ResourceType = resourceType,
+                ResourceId = resourceId,
                 Scope = rule.Scope,
             }
         );
 
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync();
     }
 
-    private Guid? ToResourceId(Resource resource) => resource switch
-    {
-        ContentTypeResource c => c.ContentTypeId,
-        ContentItemResource c => c.ContentItemId,
-        FieldResource c => c.FieldId,
-        _ => throw new NotSupportedException($"Resource type {resource.GetType()} has no mapping to an ID.")
-    };
-
-    private Persistence.Permissions.ResourceType ToResourceType(Resource resource) => resource switch
-    {
-        ContentTypeResource => Persistence.Permissions.ResourceType.ContentType,
-        ContentItemResource => Persistence.Permissions.ResourceType.ContentItem,
-        FieldResource => Persistence.Permissions.ResourceType.Field,
-        _ => throw new NotSupportedException($"Resource type {resource.GetType()} is unsupported for Persistence.")
-    };
-
-    /// <summary>
-    /// Removes an existing permission rule from the specified role.
-    /// </summary>
-    /// <param name="roleId">The unique identifier of the role.</param>
-    /// <param name="rule">The permission rule to remove.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <inheritdoc/>
     public async Task RemovePermissionFromRoleAsync(Guid roleId, PermissionRule rule)
     {
-        var resourceType = ToResourceType(rule.Resource);
-        var resourceId = ToResourceId(rule.Resource);
+        Persistence.Permissions.ResourceType resourceType = ToResourceType(rule);
+        Guid? resourceId = ToResourceId(rule);
 
-        var entity = await _db.RolePermissions.FirstOrDefaultAsync(rp => 
-            rp.RoleId == roleId && 
-            rp.Action == rule.Action && 
-            rp.ResourceType == resourceType && 
-            rp.ResourceId == resourceId &&
-            rp.Scope == rule.Scope);
+        RolePermissionEntity? entity = await db.RolePermissions.FirstOrDefaultAsync(rp =>
+            rp.RoleId == roleId
+            && rp.Action == rule.Action
+            && rp.ResourceType == resourceType
+            && rp.ResourceId == resourceId
+            && rp.Scope == rule.Scope
+        );
 
         if (entity is not null)
         {
-            _db.RolePermissions.Remove(entity);
-            await _db.SaveChangesAsync();
+            db.RolePermissions.Remove(entity);
+            await db.SaveChangesAsync();
         }
+    }
+
+    private static Guid? ToResourceId(PermissionRule rule) =>
+        rule.Resource switch
+        {
+            ContentTypeResource r => r.ContentTypeId,
+            ContentItemResource r => r.ContentItemId,
+            FieldResource r => r.FieldId,
+            UserResource r => r.UserId,
+            null => null,
+            _ => throw new NotSupportedException(
+                $"Resource type '{rule.Resource.GetType().Name}' has no ID mapping."
+            ),
+        };
+
+    private static Persistence.Permissions.ResourceType ToResourceType(PermissionRule rule)
+    {
+        if (rule.Resource is not null)
+        {
+            return rule.Resource switch
+            {
+                ContentTypeResource => Persistence.Permissions.ResourceType.ContentType,
+                ContentItemResource => Persistence.Permissions.ResourceType.ContentItem,
+                FieldResource => Persistence.Permissions.ResourceType.Field,
+                UserResource => Persistence.Permissions.ResourceType.User,
+                _ => throw new NotSupportedException(
+                    $"Resource type '{rule.Resource.GetType().Name}' is unsupported."
+                ),
+            };
+        }
+
+        return rule.ResourceType switch
+        {
+            Domain.Permissions.ResourceType.ContentType =>
+                Persistence.Permissions.ResourceType.ContentType,
+            Domain.Permissions.ResourceType.ContentItem =>
+                Persistence.Permissions.ResourceType.ContentItem,
+            Domain.Permissions.ResourceType.Field =>
+                Persistence.Permissions.ResourceType.Field,
+            Domain.Permissions.ResourceType.User =>
+                Persistence.Permissions.ResourceType.User,
+            _ => throw new NotSupportedException(
+                $"Resource type '{rule.ResourceType}' is unsupported."
+            ),
+        };
     }
 }
