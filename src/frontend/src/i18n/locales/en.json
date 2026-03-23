@@ -1,0 +1,33 @@
+{
+  "auth": {
+    "title": "Sign In",
+    "usernameLabel": "Username",
+    "passwordLabel": "Password",
+    "submit": "Sign In",
+    "submitting": "Signing in...",
+    "invalidCredentials": "Invalid username or password"
+  },
+  "contentType": {
+    "create": {
+      "title": "Create Content Type",
+      "description": "Define the structure for your content type with fields, validation rules and transformation rules.",
+      "nameLabel": "Content Type Name",
+      "namePlaceholder": "e.g., Blog Posts, Products",
+      "nameHint": "minimum 5 characters",
+      "fieldsLabel": "Fields:",
+      "addField": "Add field",
+      "submit": "Submit",
+      "submitting": "Creating...",
+      "reset": "Reset",
+      "errorRetry": "Failed to create content type. Please try again later.",
+      "field": {
+        "namePlaceholder": "e.g., title",
+        "nameLabel": "Field Name",
+        "typeLabel": "Field Type",
+        "typePlaceholder": "Select type",
+        "isRequiredLabel": "Value is required",
+        "removeField": "Remove Field"
+      }
+    }
+  }
+}
