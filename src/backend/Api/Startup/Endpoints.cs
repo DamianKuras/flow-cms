@@ -19,6 +19,7 @@ public static class Endpoints
         app.RegisterAuthEndpoints();
 
         app.RegisterUsersEndpoints();
+        app.RegisterRolesEndpoints();
 
         app.RegisterDebugEndpoints();
     }

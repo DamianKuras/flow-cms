@@ -68,7 +68,7 @@ public static class ProblemDetailsConfiguration
         };
 
     private static void SetDefaultTypeUri(Microsoft.AspNetCore.Mvc.ProblemDetails problemDetails) =>
-        problemDetails.Type = problemDetails.Status.Value switch
+        problemDetails.Type = problemDetails.Status!.Value switch
         {
             400 => "https://tools.ietf.org/html/rfc9110#section-15.5.1", // Bad Request
             401 => "https://tools.ietf.org/html/rfc9110#section-15.5.2", // Unauthorized

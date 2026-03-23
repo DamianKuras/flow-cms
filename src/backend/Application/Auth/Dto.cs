@@ -8,11 +8,9 @@ namespace Application.Auth;
 /// <param name="TokenType">The type of token issued (e.g., "Bearer").</param>
 /// <param name="ExpiresIn">The duration until the access token expires (e.g., "3600" for seconds or "60min").</param>
 /// <param name="RefreshToken">The token used to obtain a new access token when the current one expires.</param>
-/// <param name="Scope">The scope of access granted by the token (e.g., "read write").</param>
-public record SignInResponseDTO(
+public record SignInResponse(
     string AccessToken,
     string TokenType,
     string ExpiresIn,
-    string RefreshToken,
-    string Scope
+    string RefreshToken
 );
