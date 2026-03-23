@@ -6,7 +6,7 @@ namespace Domain.ContentTypes;
 /// <summary>
 /// Exception thrown when attempting to publish a content type that is not in a valid state for publishing.
 /// </summary>
-public class CannotPublishContentTypeException : Exception
+public sealed class CannotPublishContentTypeException : Exception
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="CannotPublishContentTypeException"/> class with a custom message.
@@ -20,7 +20,7 @@ public class CannotPublishContentTypeException : Exception
 /// Represents a content type definition that defines the structure and schema for content entries.
 /// Content types can exist in draft or published states and are versioned to track changes over time.
 /// </summary>
-public class ContentType : ISoftDeletable
+public sealed class ContentType : ISoftDeletable
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="ContentType"/> class.
@@ -85,15 +85,12 @@ public class ContentType : ISoftDeletable
     /// <summary>
     /// Gets the ordered collection of fields that define the schema for this content type.
     /// </summary>
-    public IReadOnlyList<Field> Fields { get; }
-
-    private IReadOnlyDictionary<Guid, Field>? _fieldsById;
+    public IReadOnlyList<Field>? Fields { get; }
 
     /// <summary>
     /// Gets a dictionary that provides fast lookup of fields by their unique identifier.
     /// </summary>
-    public IReadOnlyDictionary<Guid, Field> FieldsById =>
-        _fieldsById ??= Fields.ToDictionary(f => f.Id);
+    public IReadOnlyDictionary<Guid, Field> FieldsById => field ??= Fields!.ToDictionary(f => f.Id);
 
     /// <summary>
     /// Gets the UTC timestamp when this content type was created.
@@ -157,7 +154,7 @@ public class ContentType : ISoftDeletable
         return new ContentType(
             id: Guid.NewGuid(),
             name: Name,
-            fields: Fields.ToList().AsReadOnly(),
+            fields: Fields!.ToList().AsReadOnly(),
             version: nextVersion,
             status: ContentTypeStatus.PUBLISHED
         );

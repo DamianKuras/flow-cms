@@ -124,14 +124,36 @@ public sealed class CreateContentItemHandler(
 
         var contentItem = new ContentItem(contentItemId, command.Title, command.ContentTypeId);
 
+        var fieldValidationResult = new MultiFieldValidationResult();
         foreach (KeyValuePair<Guid, object?> kv in command.Values)
         {
-            ContentItemFieldService.SetValue(contentItem, contentType, kv.Key, kv.Value);
+            Result setValueResult = ContentItemFieldService.SetValue(
+                contentItem,
+                contentType,
+                kv.Key,
+                kv.Value
+            );
+            if (setValueResult.IsFailure)
+            {
+                if (setValueResult.FailureKind == FailureKind.FieldValidation)
+                {
+                    fieldValidationResult.AddValidationResult(setValueResult.ValidationResult!);
+                }
+                else
+                {
+                    return Result<Guid>.Failure(setValueResult.Error!);
+                }
+            }
+        }
+
+        if (fieldValidationResult.IsFailure)
+        {
+            return Result<Guid>.MultiFieldValidationFailure(fieldValidationResult);
         }
 
         foreach (Field field in contentType.Fields)
         {
-            if (field.IsRequired == false)
+            if (!field.IsRequired)
             {
                 continue;
             }
