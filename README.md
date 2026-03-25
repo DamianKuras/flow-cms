@@ -69,13 +69,7 @@ Frontend tests use [Vitest](https://vitest.dev/) with [Testing Library](https://
    npm test
    ```
 
-2. **Run in watch mode (re-runs on file changes):**
-
-   ```bash
-   npm run test:watch
-   ```
-
-Tests are colocated with the source files they cover (e.g. `schema.test.ts` next to `schema.ts`).
+Tests live in `src/frontend/tests/`, mirroring the source structure (e.g. `tests/rules/validation/min-length-rule.test.tsx` tests `src/rules/validation/min-length-rule.tsx`).
 
 ---
 
@@ -106,6 +100,28 @@ The **Integration.Tests** project uses **Testcontainers**. You must have **Docke
    dotnet test ./tests/Application.Tests
    ```
 
+### Code Coverage
+
+Generates a merged HTML coverage report from Domain, Application, and Integration tests.
+
+#### Prerequisites — one-time install
+
+```bash
+dotnet tool install -g dotnet-reportgenerator-globaltool
+```
+
+#### Run
+
+```bat
+test_with_coverage.bat
+```
+
+The report opens automatically in your browser. Coverage is scoped to `Domain`, `Application`, `Infrastructure`, and `Api` assemblies — EF migrations and auto-generated OpenAPI code are excluded.
+
+> **Note:** E2E tests are excluded from coverage collection because they start the API as a separate process, which cannot be instrumented.
+
+---
+
 ### E2E Tests (Playwright .NET)
 
 The `E2E.Tests` project runs full-stack browser tests: a real Chromium browser talks to the React frontend, which talks to an ASP.NET Core API backed by a PostgreSQL Testcontainers database — all started automatically by the test runner.
@@ -122,14 +138,16 @@ After building the project, run:
 
 ```bash
 dotnet build tests/E2E.Tests
-pwsh tests/E2E.Tests/bin/Debug/net10.0/playwright.ps1 install chromium
 ```
 
-On Linux/macOS replace `pwsh` with `pwsh` or use:
+Then install the browser binaries. Use whichever PowerShell is available:
 
-```bash
-dotnet tool install --global Microsoft.Playwright.CLI
-playwright install chromium
+```powershell
+# Windows PowerShell (built-in)
+powershell tests\E2E.Tests\bin\Debug\net10.0\playwright.ps1 install chromium
+
+# PowerShell Core
+pwsh tests/E2E.Tests/bin/Debug/net10.0/playwright.ps1 install chromium
 ```
 
 #### Run E2E tests
