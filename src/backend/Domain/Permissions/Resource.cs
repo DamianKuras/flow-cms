@@ -1,38 +1,3 @@
-// namespace Domain.Permissions;
-
-// /// <summary>
-// /// Represents a specific resource instance in the system.
-// /// </summary>
-// public abstract record Resource;
-
-// /// <summary>
-// ///
-// /// </summary>
-// /// <param name="ContentTypeId"></param>
-// public sealed record ContentTypeResource(Guid ContentTypeId) : Resource;
-
-// /// <summary>
-// ///
-// /// </summary>
-// /// <param name="ContentItemId"></param>
-// public sealed record ContentItemResource(Guid ContentItemId) : Resource;
-
-// /// <summary>
-// ///
-// /// </summary>
-// /// <param name="FieldId"></param>
-// public sealed record FieldResource(Guid FieldId) : Resource;
-
-// /// <summary>
-// ///
-// /// </summary>
-// public abstract record ResourceType;
-
-// /// <summary>
-// ///
-// /// </summary>
-// public sealed record AllContentTypeResource : ResourceType;
-
 namespace Domain.Permissions;
 
 /// <summary>
@@ -74,24 +39,28 @@ public sealed record FieldResource(Guid FieldId) : Resource
 }
 
 /// <summary>
+/// Represents a specific user instance.
+/// </summary>
+public sealed record UserResource(Guid UserId) : Resource
+{
+    /// <inheritdoc/>
+    public override ResourceType Type => ResourceType.User;
+}
+
+/// <summary>
 /// Represents categories of resources in the system.
 /// </summary>
 public enum ResourceType
 {
-    /// <summary>
-    /// Represents content type resources that define the structure and schema of content.
-    /// </summary>
+    /// <summary>Content type resources that define the structure and schema of content.</summary>
     ContentType,
 
-    /// <summary>
-    /// Represents content item resources that contain actual content data.
-    /// </summary>
+    /// <summary>Content item resources that contain actual content data.</summary>
     ContentItem,
 
-    /// <summary>
-    /// Represents field resources that define individual data fields within content types.
-    /// </summary>
+    /// <summary>Field resources that define individual data fields within content types.</summary>
     Field,
 
+    /// <summary>User resources.</summary>
     User,
 }
