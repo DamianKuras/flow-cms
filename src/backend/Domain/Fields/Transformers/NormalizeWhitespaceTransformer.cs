@@ -15,6 +15,7 @@ public class NormalizeWhitespaceTransformer : ITransformationRule
     /// <inheritdoc/>
     public string Type => "NormalizeWhitespaceTransformationRules";
 
+    /// <inheritdoc/>
     public Capability RequiredCapability => new(Capability.Standard.TEXT);
 
     /// <inheritdoc/>

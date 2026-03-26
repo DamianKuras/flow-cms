@@ -15,6 +15,7 @@ public class RemoveSpecialCharsTransformer : ITransformationRule
     /// <inheritdoc/>
     public string Type => "RemoveSpecialCharactersTransformationRules";
 
+    /// <inheritdoc/>
     public Capability RequiredCapability => new(Capability.Standard.TEXT);
 
     /// <inheritdoc/>

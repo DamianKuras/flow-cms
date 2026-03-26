@@ -15,6 +15,7 @@ public class LowercaseTransformer : ITransformationRule
     /// <inheritdoc/>
     public string Type => "LowercaseTransformationRule";
 
+    /// <inheritdoc/>
     public Capability RequiredCapability => new(Capability.Standard.TEXT);
 
     /// <inheritdoc/>

@@ -15,6 +15,7 @@ public class UppercaseTransformer : ITransformationRule
     /// <inheritdoc/>
     public string Type => "UppercaseTransformationRule";
 
+    /// <inheritdoc/>
     public Capability RequiredCapability => new Capability(Capability.Standard.TEXT);
 
     /// <inheritdoc/>

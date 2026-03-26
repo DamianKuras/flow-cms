@@ -27,7 +27,9 @@ public sealed class RolePermissionService(AppDbContext db) : IRolePermissionServ
         );
 
         if (exists)
+        {
             return;
+        }
 
         db.RolePermissions.Add(
             new RolePermissionEntity
@@ -96,14 +98,16 @@ public sealed class RolePermissionService(AppDbContext db) : IRolePermissionServ
 
         return rule.ResourceType switch
         {
-            Domain.Permissions.ResourceType.ContentType =>
-                Persistence.Permissions.ResourceType.ContentType,
-            Domain.Permissions.ResourceType.ContentItem =>
-                Persistence.Permissions.ResourceType.ContentItem,
-            Domain.Permissions.ResourceType.Field =>
-                Persistence.Permissions.ResourceType.Field,
-            Domain.Permissions.ResourceType.User =>
-                Persistence.Permissions.ResourceType.User,
+            Domain.Permissions.ResourceType.ContentType => Persistence
+                .Permissions
+                .ResourceType
+                .ContentType,
+            Domain.Permissions.ResourceType.ContentItem => Persistence
+                .Permissions
+                .ResourceType
+                .ContentItem,
+            Domain.Permissions.ResourceType.Field => Persistence.Permissions.ResourceType.Field,
+            Domain.Permissions.ResourceType.User => Persistence.Permissions.ResourceType.User,
             _ => throw new NotSupportedException(
                 $"Resource type '{rule.ResourceType}' is unsupported."
             ),

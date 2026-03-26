@@ -6,10 +6,8 @@ namespace Domain.Fields.Validations;
 /// <summary>
 /// Validates that a text value matches a specified regular expression pattern.
 /// </summary>
-/// <exception cref="ArgumentException"> Thrown when <paramref name="pattern"/>
-/// is not a valid regex.</exception>
-/// <exception cref="ArgumentNullException"> Thrown when <paramref name="pattern"/>
-/// is null.</exception>
+/// <exception cref="ArgumentException"> Thrown when the pattern is not a valid regex.</exception>
+/// <exception cref="ArgumentNullException"> Thrown when the pattern is null.</exception>
 /// <exception cref="RegexMatchTimeoutException"> Thrown when the execution time of a regular expression
 ///  pattern-matching method exceeds its time-out interval.</exception>
 public class RegexRule : ParameterizedValidationRuleBase

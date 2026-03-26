@@ -1,4 +1,4 @@
-﻿using Domain.Common;
+using Domain.Common;
 using Domain.Fields.Validations;
 
 namespace PluginExample;
@@ -18,8 +18,8 @@ public class IsLowercaseRule : IValidationRule
     /// </summary>
     public string Type => "IsLowercaseRule";
 
-    private const string NotStringError = "Value must be a string.";
-    private const string HasUppercaseError = "String contains uppercase characters.";
+    private const string NOT_STRING_ERROR = "Value must be a string.";
+    private const string HAS_UPPERCASE_ERROR = "String contains uppercase characters.";
 
     /// <summary>
     /// Gets the capability required to use this validation rule.
@@ -38,7 +38,7 @@ public class IsLowercaseRule : IValidationRule
     {
         if (value is not string str)
         {
-            return Result.Failure(Error.Validation(NotStringError));
+            return Result.Failure(Error.Validation(NOT_STRING_ERROR));
         }
 
         if (string.IsNullOrEmpty(str))
@@ -48,7 +48,7 @@ public class IsLowercaseRule : IValidationRule
 
         if (str.Any(char.IsUpper))
         {
-            return Result.Failure(Error.Validation(HasUppercaseError));
+            return Result.Failure(Error.Validation(HAS_UPPERCASE_ERROR));
         }
 
         return Result.Success();
@@ -63,7 +63,7 @@ public class IsLowercaseRule : IValidationRule
     {
         if (value is not string str)
         {
-            errors.Add(NotStringError);
+            errors.Add(NOT_STRING_ERROR);
             return;
         }
 
@@ -74,7 +74,7 @@ public class IsLowercaseRule : IValidationRule
 
         if (str.Any(char.IsUpper))
         {
-            errors.Add(HasUppercaseError);
+            errors.Add(HAS_UPPERCASE_ERROR);
         }
     }
 };
