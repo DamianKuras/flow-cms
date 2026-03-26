@@ -26,8 +26,7 @@ public sealed class ViteDevServer : IAsyncDisposable
             Arguments = "run dev -- --mode e2e",
             WorkingDirectory = frontendDir,
             UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
+            // Do NOT redirect stdout/stderr — unread buffers would block the process
             CreateNoWindow = true,
         };
 
@@ -57,7 +56,9 @@ public sealed class ViteDevServer : IAsyncDisposable
             {
                 HttpResponseMessage response = await http.GetAsync(FRONTEND_URL);
                 if (response.StatusCode == HttpStatusCode.OK)
+                {
                     return;
+                }
             }
             catch
             {
@@ -68,7 +69,8 @@ public sealed class ViteDevServer : IAsyncDisposable
         }
 
         throw new TimeoutException(
-            $"Vite dev server did not become ready at {FRONTEND_URL} within {STARTUP_TIMEOUT_SECONDS}s.");
+            $"Vite dev server did not become ready at {FRONTEND_URL} within {STARTUP_TIMEOUT_SECONDS}s."
+        );
     }
 
     private static string GetFrontendDirectory()
@@ -85,16 +87,38 @@ public sealed class ViteDevServer : IAsyncDisposable
 
             dir = Directory.GetParent(dir)?.FullName;
         }
-        throw new DirectoryNotFoundException("Could not locate src/frontend from test binary directory.");
+        throw new DirectoryNotFoundException(
+            "Could not locate src/frontend from test binary directory."
+        );
     }
 
     public async ValueTask DisposeAsync()
     {
         if (!_process.HasExited)
         {
-            _process.Kill(entireProcessTree: true);
+            if (OperatingSystem.IsWindows())
+            {
+                // taskkill /F /T reliably kills the entire tree on Windows,
+                // including grandchildren spawned by cmd.exe → npm → node
+                using var kill = Process.Start(
+                    new ProcessStartInfo
+                    {
+                        FileName = "taskkill",
+                        Arguments = $"/F /T /PID {_process.Id}",
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                    }
+                );
+                kill?.WaitForExit();
+            }
+            else
+            {
+                _process.Kill(entireProcessTree: true);
+            }
+
             await _process.WaitForExitAsync();
         }
+
         _process.Dispose();
     }
 }
