@@ -19,7 +19,7 @@ public class SlugGeneratorTests
         var generator = new SlugGenerator();
 
         // Act
-        var result = generator.GenerateValue(input);
+        object? result = generator.GenerateValue(input);
 
         // Assert
         Assert.Equal(expected, result);
@@ -34,7 +34,7 @@ public class SlugGeneratorTests
         var generator = new SlugGenerator();
 
         // Act
-        var result = generator.GenerateValue(input);
+        object? result = generator.GenerateValue(input);
 
         // Assert
         Assert.Null(result);
@@ -45,10 +45,10 @@ public class SlugGeneratorTests
     {
         // Arrange
         var generator = new SlugGenerator();
-        var nonStringVal = 12345;
+        int nonStringVal = 12345;
 
         // Act
-        var result = generator.GenerateValue(nonStringVal);
+        object? result = generator.GenerateValue(nonStringVal);
 
         // Assert
         Assert.Null(result);

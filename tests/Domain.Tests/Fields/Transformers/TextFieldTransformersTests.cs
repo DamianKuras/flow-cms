@@ -18,7 +18,7 @@ public class TextFieldTransformersTests
         var transformer = new CapitalizeTransformer();
 
         // Act
-        var result = transformer.ApplyTransformation(input);
+        object? result = transformer.ApplyTransformation(input);
 
         // Assert
         Assert.Equal(expected, result);
@@ -35,7 +35,7 @@ public class TextFieldTransformersTests
         var transformer = new LowercaseTransformer();
 
         // Act
-        var result = transformer.ApplyTransformation(input);
+        object? result = transformer.ApplyTransformation(input);
 
         // Assert
         Assert.Equal(expected, result);
@@ -53,7 +53,7 @@ public class TextFieldTransformersTests
         var transformer = new NormalizeWhitespaceTransformer();
 
         // Act
-        var result = transformer.ApplyTransformation(input);
+        object? result = transformer.ApplyTransformation(input);
 
         // Assert
         Assert.Equal(expected, result);
@@ -70,7 +70,7 @@ public class TextFieldTransformersTests
         var transformer = new RemoveSpecialCharsTransformer();
 
         // Act
-        var result = transformer.ApplyTransformation(input);
+        object? result = transformer.ApplyTransformation(input);
 
         // Assert
         Assert.Equal(expected, result);
@@ -87,7 +87,7 @@ public class TextFieldTransformersTests
         var transformer = new UppercaseTransformer();
 
         // Act
-        var result = transformer.ApplyTransformation(input);
+        object? result = transformer.ApplyTransformation(input);
 
         // Assert
         Assert.Equal(expected, result);
