@@ -24,6 +24,17 @@ This project is **actively under development**. The API structure, endpoints, an
 
 ### Backend
 
+1. **Configure local settings:**
+
+   `appsettings.Development.json` ships with working local defaults including seed credentials. For production, override the `Seed` section via environment variables:
+
+   | Environment variable | Description |
+   |---|---|
+   | `Seed__AdminEmail` | Admin account email |
+   | `Seed__AdminPassword` | Admin account password |
+   | `Seed__DevUserPassword` | Dev user password (Development only) |
+   | `Seed__DevUserCount` | Number of dev users to seed (Development only) |
+
 1. **Create migration:**
 
 ```bash
@@ -157,6 +168,7 @@ dotnet test tests/E2E.Tests
 ```
 
 The test fixture automatically:
+
 1. Starts a PostgreSQL container and runs migrations
 2. Starts the ASP.NET Core API on `http://localhost:5252`
 3. Starts the Vite frontend on `http://localhost:5173` (using `.env.e2e` so `VITE_CMS_API_URL` points to the test API)
