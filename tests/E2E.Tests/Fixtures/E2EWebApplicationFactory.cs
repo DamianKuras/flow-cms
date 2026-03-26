@@ -32,11 +32,24 @@ public class E2EWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLi
     public async Task InitializeAsync()
     {
         await _dbContainer.StartAsync();
+        EnsureHostInitialized();
+        await MigrateAndSeedAsync();
+    }
 
-        // Trigger lazy host creation (runs ConfigureWebHost + CreateHost).
-        // The TestServer host runs SeedData (migrations + seed) once.
-        // The Kestrel host has SkipAutoSeed=true so it does not run migrations again.
+    private void EnsureHostInitialized() =>
+        // Accessing Server triggers WebApplicationFactory's lazy host creation —
+        // ConfigureWebHost runs, DI is built, and Services becomes available.
         _ = Server;
+
+    private async Task MigrateAndSeedAsync()
+    {
+        using IServiceScope scope = Services.CreateScope();
+        IServiceProvider services = scope.ServiceProvider;
+
+        AppDbContext db = services.GetRequiredService<AppDbContext>();
+        await db.Database.MigrateAsync();
+
+        await services.GetRequiredService<DataSeeder>().SeedAsync();
     }
 
     public new async Task DisposeAsync()
@@ -64,11 +77,6 @@ public class E2EWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLi
             b.UseUrls(API_BASE_URL);
         });
 
-        // Prevent the Kestrel host from running migrations/seeding a second time
-        builder.ConfigureAppConfiguration(config =>
-            config.AddInMemoryCollection(
-                new Dictionary<string, string?> { ["SkipAutoSeed"] = "true" }));
-
         _kestrelHost = builder.Build();
         _kestrelHost.Start();
 
@@ -76,28 +84,41 @@ public class E2EWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLi
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder) =>
-        builder.ConfigureServices(services =>
-        {
-            // Replace DbContext with test container
-            ServiceDescriptor? descriptor = services.SingleOrDefault(d =>
-                d.ServiceType == typeof(DbContextOptions<AppDbContext>));
-
-            if (descriptor is not null)
+        builder
+            .ConfigureAppConfiguration(config =>
+                config.AddInMemoryCollection(
+                    new Dictionary<string, string?> { ["SkipAutoSeed"] = "true" }
+                )
+            )
+            .ConfigureServices(services =>
             {
-                services.Remove(descriptor);
-            }
+                // Replace DbContext with test container
+                ServiceDescriptor? descriptor = services.SingleOrDefault(d =>
+                    d.ServiceType == typeof(DbContextOptions<AppDbContext>)
+                );
 
-            services.AddDbContext<AppDbContext>(options =>
-                options.UseNpgsql(_dbContainer.GetConnectionString()));
+                if (descriptor is not null)
+                {
+                    services.Remove(descriptor);
+                }
 
-            // Ensure Vite's origin is allowed by CORS
-            services.AddCors(options =>
-                options.AddPolicy("AllowSpecific", policy =>
-                    policy.WithOrigins(FRONTEND_ORIGIN)
-                          .AllowAnyMethod()
-                          .AllowAnyHeader()
-                          .AllowCredentials()));
-        });
+                services.AddDbContext<AppDbContext>(options =>
+                    options.UseNpgsql(_dbContainer.GetConnectionString())
+                );
+
+                // Ensure Vite's origin is allowed by CORS
+                services.AddCors(options =>
+                    options.AddPolicy(
+                        "AllowSpecific",
+                        policy =>
+                            policy
+                                .WithOrigins(FRONTEND_ORIGIN)
+                                .AllowAnyMethod()
+                                .AllowAnyHeader()
+                                .AllowCredentials()
+                    )
+                );
+            });
 
     public async Task ResetDatabaseAsync()
     {

@@ -93,6 +93,7 @@ public static class ServiceRegistration
         services.AddScoped<IPermissionProvider, EfPermissionProvider>();
 
         services.AddScoped<IUserContext, HttpUserContext>();
+        services.AddScoped<DataSeeder>();
 
         return services;
     }

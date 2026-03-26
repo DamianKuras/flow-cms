@@ -18,6 +18,9 @@
     <Using Include="Xunit" />
   </ItemGroup>
   <ItemGroup>
+    <None Include=".env" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\src\backend\Api\Api.csproj" />
     <ProjectReference Include="..\..\src\backend\Application\Application.csproj" />
     <ProjectReference Include="..\..\src\backend\Domain\Domain.csproj" />

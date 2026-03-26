@@ -1,11 +1,8 @@
 using Infrastructure.Data;
-using Infrastructure.Users;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Startup;
@@ -37,15 +34,12 @@ public static class SeedDataStartup
         try
         {
             AppDbContext context = services.GetRequiredService<AppDbContext>();
-            UserManager<AppUser> userManager = services.GetRequiredService<UserManager<AppUser>>();
-            RoleManager<AppRole> roleManager = services.GetRequiredService<RoleManager<AppRole>>();
-            IHostEnvironment environment = services.GetRequiredService<IHostEnvironment>();
             logger?.LogInformation("Starting database migration...");
             await context.Database.MigrateAsync();
             logger?.LogInformation("Database migration completed successfully");
 
             logger?.LogInformation("Starting data seeding...");
-            var seeder = new DataSeeder(context, userManager, roleManager, environment);
+            DataSeeder seeder = services.GetRequiredService<DataSeeder>();
             await seeder.SeedAsync();
             logger?.LogInformation("Data seeding completed successfully");
         }
