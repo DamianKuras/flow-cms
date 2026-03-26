@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Application.Auth;
+using Integration.Tests.Infrastructure;
 
 namespace Integration.Tests.Authentication;
 
@@ -8,7 +9,7 @@ public static class AuthenticationHelper
 {
     public static async Task<string> GetAdminAuthTokenAsync(HttpClient client)
     {
-        var loginRequest = new { email = "admin@admin.com", password = "Admin@123" };
+        var loginRequest = new { email = TestConstants.AdminEmail, password = TestConstants.AdminPassword };
 
         HttpResponseMessage response = await client.PostAsJsonAsync("/auth/sign-in", loginRequest);
         response.EnsureSuccessStatusCode();
@@ -19,7 +20,11 @@ public static class AuthenticationHelper
 
     public static async Task<string> GetDevUserAuthTokenAsync(HttpClient client, int userIndex = 1)
     {
-        var loginRequest = new { email = $"user{userIndex}@test.com", password = "DevUser@123" };
+        var loginRequest = new
+        {
+            email = string.Format(TestConstants.DevUserEmailPattern, userIndex),
+            password = TestConstants.DevUserPassword,
+        };
 
         HttpResponseMessage response = await client.PostAsJsonAsync("/auth/sign-in", loginRequest);
         response.EnsureSuccessStatusCode();

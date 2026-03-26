@@ -11,6 +11,7 @@ using Integration.Tests.Authentication;
 using Integration.Tests.Builders;
 using Integration.Tests.Fixtures;
 using Integration.Tests.Helpers;
+using Integration.Tests.Infrastructure;
 
 namespace Integration.Tests.Endpoints;
 
@@ -828,9 +829,4 @@ public class ContentTypeEndpointsTests
 
     #endregion
 
-    // Helper class to deserialize the response
-    private class CreatedResponse
-    {
-        public Guid Id { get; set; }
-    }
 }

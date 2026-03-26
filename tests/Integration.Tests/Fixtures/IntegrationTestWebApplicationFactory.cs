@@ -1,8 +1,11 @@
+using System.Text.Json;
 using Infrastructure.Data;
-using Microsoft.AspNetCore.Hosting; // ← ADD THIS LINE
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Testcontainers.PostgreSql;
 
 namespace Integration.Tests.Fixtures;
@@ -64,6 +67,13 @@ public class IntegrationTestWebApplicationFactory : WebApplicationFactory<Progra
                 options.UseNpgsql(_dbContainer.GetConnectionString())
             );
         });
+
+    /// <summary>
+    /// The exact JsonSerializerOptions the API uses — resolved from the app's DI container.
+    /// Use this in tests instead of re-declaring options manually.
+    /// </summary>
+    public JsonSerializerOptions JsonOptions =>
+        Services.GetRequiredService<IOptions<JsonOptions>>().Value.SerializerOptions;
 
     public async Task ResetDatabaseAsync()
     {

@@ -8,6 +8,7 @@ using Integration.Tests.Authentication;
 using Integration.Tests.Builders;
 using Integration.Tests.Fixtures;
 using Integration.Tests.Helpers;
+using Integration.Tests.Infrastructure;
 
 namespace Integration.Tests.Endpoints;
 
@@ -261,11 +262,6 @@ public class ContentItemEndpointsTests
         ContentItemDto item = await ContentItemApi.Get(_client, itemId);
         Assert.NotNull(item);
         Assert.NotEqual(Guid.Empty, item.Id);
-    }
-
-    private class CreatedResponse
-    {
-        public Guid Id { get; set; }
     }
 
     private record ContentTypeWithGuid(ContentTypeDto ContentTypeDto, Guid Id);
