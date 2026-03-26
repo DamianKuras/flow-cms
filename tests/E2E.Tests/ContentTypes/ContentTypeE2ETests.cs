@@ -1,6 +1,9 @@
 using System.Net.Http.Json;
 using System.Text.RegularExpressions;
+using Application.Auth;
+using E2E.Tests.Config;
 using E2E.Tests.Fixtures;
+using E2E.Tests.Helpers;
 using Microsoft.Playwright;
 
 namespace E2E.Tests.ContentTypes;
@@ -16,25 +19,36 @@ public class ContentTypeE2ETests : E2ETestBase
         await LoginAsAdminAsync();
 
         await Page.GotoAsync("/content-types/new");
-        await Page.WaitForSelectorAsync("input[placeholder*='Blog Posts']");
+        await Page.WaitForSelectorAsync(
+            $"input[placeholder='{T.ContentType.Create.NamePlaceholder}']"
+        );
 
-        await Page.FillAsync("input[placeholder*='Blog Posts']", "Blog Posts");
+        await Page.FillAsync(
+            $"input[placeholder='{T.ContentType.Create.NamePlaceholder}']",
+            "Blog Posts"
+        );
 
-        await Page.ClickAsync("text=Add field");
+        await Page.ClickAsync($"text={T.ContentType.Create.AddField}");
         // Wait for the first field row to appear
-        await Page.WaitForSelectorAsync("[placeholder*='field name'], [placeholder*='Field name']");
+        await Page.WaitForSelectorAsync(
+            $"input[placeholder='{T.ContentType.Create.Field.NamePlaceholder}']"
+        );
 
-        // Fill the first field's name — adjust selector to match FieldRow's actual input
-        ILocator fieldNameInput = Page.Locator("input")
-            .Filter(new LocatorFilterOptions { HasText = string.Empty })
-            .Nth(1); // second input on page (after content type name)
-        await fieldNameInput.FillAsync("Title");
+        // Fill the first field's name
+        await Page.FillAsync(
+            $"input[placeholder='{T.ContentType.Create.Field.NamePlaceholder}']",
+            "Title"
+        );
+
+        // Select the field type (required by form validation)
+        await Page.ClickAsync($"text={T.ContentType.Create.Field.TypePlaceholder}");
+        await Page.ClickAsync("[role=option]:has-text('Text')");
 
         await Page.ClickAsync("[type=submit][form='create-content-type']");
 
         // After successful creation, the router navigates to /content-types/:id
         await Page.WaitForURLAsync(
-            new Regex("/content-types/[^/]+$"),
+            new Regex(@"/content-types/[0-9a-f\-]+$"),
             new PageWaitForURLOptions { Timeout = 10_000 }
         );
 
@@ -74,20 +88,24 @@ public class ContentTypeE2ETests : E2ETestBase
         await Page.GotoAsync("/content-types");
         await Page.WaitForSelectorAsync("text=Articles");
 
-        await Assertions.Expect(Page.GetByText("Articles")).ToBeVisibleAsync();
+        // Use role=cell to avoid matching sidebar navigation links
+        await Assertions
+            .Expect(Page.GetByRole(AriaRole.Cell, new() { Name = "Articles" }))
+            .ToBeVisibleAsync();
     }
 
-    private static async Task<string> GetAdminTokenAsync(System.Net.Http.HttpClient client)
+    private static async Task<string> GetAdminTokenAsync(HttpClient client)
     {
         HttpResponseMessage res = await client.PostAsJsonAsync(
             "/auth/sign-in",
-            new { email = "admin@admin.com", password = "Admin@123" }
+            new
+            {
+                email = E2EEnv.Require("E2E_ADMIN_EMAIL"),
+                password = E2EEnv.Require("E2E_ADMIN_PASSWORD"),
+            }
         );
         res.EnsureSuccessStatusCode();
-        SignInResult? data = await res.Content.ReadFromJsonAsync<SignInResult>();
+        SignInResponse? data = await res.Content.ReadFromJsonAsync<SignInResponse>();
         return data!.AccessToken;
     }
-
-    private record SignInResult(string AccessToken);
 }
-
