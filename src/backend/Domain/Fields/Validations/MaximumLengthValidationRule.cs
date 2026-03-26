@@ -43,7 +43,8 @@ public class MaximumLengthValidationRule : ParameterizedValidationRuleBase
             errors.Add("Value must be string.");
             return;
         }
-        if (!int.TryParse(Parameters[MAX_LENGTH_PARAMETER_KEY]?.ToString(), out int maxLength))
+        if (!Parameters.TryGetValue(MAX_LENGTH_PARAMETER_KEY, out object? rawMaxLength)
+            || !int.TryParse(rawMaxLength?.ToString(), out int maxLength))
         {
             errors.Add("Invalid maximum length configuration.");
             return;

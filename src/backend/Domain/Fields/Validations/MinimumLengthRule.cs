@@ -43,7 +43,8 @@ public class MinimumLengthValidationRule : ParameterizedValidationRuleBase
             errors.Add("Value must be string.");
             return;
         }
-        if (!int.TryParse(Parameters[MIN_LENGTH_PARAMETER_KEY]?.ToString(), out int minLength))
+        if (!Parameters.TryGetValue(MIN_LENGTH_PARAMETER_KEY, out object? rawMinLength)
+            || !int.TryParse(rawMinLength?.ToString(), out int minLength))
         {
             errors.Add("Invalid minimum length configuration.");
             return;
