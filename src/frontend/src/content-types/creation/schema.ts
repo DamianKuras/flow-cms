@@ -26,5 +26,5 @@ export const formSchema = z.object({
     .string()
     .min(5, "Name must be at least 5 characters.")
     .max(32, "Name must be at most 32 characters."),
-  fields: z.array(fieldSchema), // Removed .default([])
+  fields: z.array(fieldSchema).min(1, "At least one field is required."),
 });

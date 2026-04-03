@@ -22,7 +22,7 @@ export function createApiClient(config: ApiClientConfig): AxiosInstance {
   });
 
   let isRefreshing = false;
-  let refreshPromise: Promise<void> | null = null;
+  let refreshPromise: Promise<string> | null = null;
 
   api.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
@@ -46,20 +46,18 @@ export function createApiClient(config: ApiClientConfig): AxiosInstance {
         originalRequest._retry = true;
 
         try {
+          let newToken: string;
           if (isRefreshing && refreshPromise) {
-            await refreshPromise;
+            newToken = await refreshPromise;
           } else {
             isRefreshing = true;
             refreshPromise = refreshToken();
-            await refreshPromise;
+            newToken = await refreshPromise;
             isRefreshing = false;
             refreshPromise = null;
           }
 
-          const token = getAccessToken();
-          if (token) {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
-          }
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
           return api(originalRequest);
         } catch (refreshError) {
           isRefreshing = false;
