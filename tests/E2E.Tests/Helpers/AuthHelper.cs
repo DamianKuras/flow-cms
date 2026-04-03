@@ -18,7 +18,7 @@ public static class AuthHelper
         string email = E2EEnv.Require("E2E_ADMIN_EMAIL");
         string password = E2EEnv.Require("E2E_ADMIN_PASSWORD");
 
-        await page.GotoAsync("http://localhost:5173/login");
+        await page.GotoAsync("/login");
         await page.WaitForSelectorAsync("#username");
 
         await page.FillAsync("#username", email);

@@ -4,11 +4,6 @@ using Microsoft.Playwright;
 
 namespace E2E.Tests;
 
-/// <summary>
-/// Base class for all E2E tests.
-/// Creates a fresh browser context and page per test, resets the database,
-/// and provides a login helper.
-/// </summary>
 [Collection(E2ECollectionFixture.NAME)]
 public abstract class E2ETestBase : IAsyncLifetime
 {
@@ -20,26 +15,44 @@ public abstract class E2ETestBase : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        await _fixture.Factory.ResetDatabaseAsync();
+        await _fixture.Docker.ResetDatabaseAsync();
 
         Context = await _fixture.Browser.NewContextAsync(
             new BrowserNewContextOptions
             {
-                BaseURL = "http://localhost:5173",
+                BaseURL = _fixture.Docker.FrontendUrl,
                 ViewportSize = new ViewportSize { Width = 1280, Height = 720 },
             }
         );
 
+        await Context.Tracing.StartAsync(new TracingStartOptions
+        {
+            Screenshots = true,
+            Snapshots = true,
+            Sources = false,
+        });
+
         Page = await Context.NewPageAsync();
+
+        Page.Console += (_, msg) =>
+        {
+            if (msg.Type is "error" or "warning")
+                Console.WriteLine($"[browser {msg.Type}] {msg.Text}");
+        };
     }
 
     public async Task DisposeAsync()
     {
         await Page.CloseAsync();
+
+        string traceDir = Environment.GetEnvironmentVariable("PLAYWRIGHT_TRACES_DIR") ?? "/tmp/playwright-traces";
+        Directory.CreateDirectory(traceDir);
+        string tracePath = Path.Combine(traceDir, $"{GetType().Name}-{DateTime.UtcNow:yyyyMMdd-HHmmss-fff}.zip");
+        await Context.Tracing.StopAsync(new TracingStopOptions { Path = tracePath });
+
         await Context.CloseAsync();
     }
 
     /// <summary>Logs in as admin via the login form.</summary>
     protected Task LoginAsAdminAsync() => AuthHelper.LoginAsAdminAsync(Page);
 }
-
