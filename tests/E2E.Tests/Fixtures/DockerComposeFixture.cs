@@ -26,7 +26,7 @@ public sealed class DockerComposeFixture : IAsyncDisposable
 
     private string DbConnectionString { get; } =
         Environment.GetEnvironmentVariable("E2E_DB_CONNECTION_STRING")
-        ?? "Host=localhost;Port=5433;Database=e2e_testdb;Username=testuser;Password=testpassword";
+        ?? "Host=localhost;Port=5444;Database=e2e_testdb;Username=testuser;Password=testpassword";
 
     private static bool IsAttachedMode =>
         !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("E2E_API_URL"));

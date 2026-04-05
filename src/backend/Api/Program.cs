@@ -39,6 +39,8 @@ try
             .WithScopedLifetime()
     );
 
+    builder.Services.AddHealthChecks();
+
     builder.Services.AddOpenApi();
 
     builder.ConfigureJson();
@@ -73,6 +75,8 @@ try
 
     app.UseAuthentication();
     app.UseAuthorization();
+
+    app.MapHealthChecks("/health");
 
     app.MapEndpoints();
 

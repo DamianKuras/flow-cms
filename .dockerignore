@@ -1,0 +1,10 @@
+.git
+src/frontend/node_modules
+src/frontend/dist
+coverage
+coveragereport
+**/*.log
+*.txt
+diff*.txt
+msbuild.log
+bash.exe.stackdump
