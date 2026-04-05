@@ -13,7 +13,11 @@ export function useApiClient() {
       refreshToken: refreshToken,
       onAuthError: () => {
         logout();
-        router.navigate({ to: "/login" });
+
+        router.navigate({
+          to: "/login",
+          search: { redirect: router.state.location.href },
+        });
       },
     });
   }, [accessToken, refreshToken, logout, router]);
