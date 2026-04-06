@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ValidationRulesSection } from "./validation-rules";
 import { TransformationRulesSection } from "./transformation-rules";
+import { useTranslation } from "react-i18next";
 
 interface FieldRowProps {
   form: any;
@@ -22,6 +23,7 @@ interface FieldRowProps {
 }
 
 export function FieldRow({ form, fieldIndex, fieldsArray }: FieldRowProps) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-8 border-2 rounded-md p-4">
       <div className="space-y-2 flex justify-between">
@@ -35,14 +37,14 @@ export function FieldRow({ form, fieldIndex, fieldsArray }: FieldRowProps) {
               <div className="flex">
                 <Field data-invalid={invalid}>
                   <FieldLabel htmlFor={`field-name-${fieldIndex}`}>
-                    Field Name
+                    {t("contentType.create.field.nameLabel")}
                   </FieldLabel>
                   <Input
                     id={`field-name-${fieldIndex}`}
                     value={field.state.value}
                     onChange={(e) => field.handleChange(e.target.value)}
                     onBlur={field.handleBlur}
-                    placeholder="e.g., title"
+                    placeholder={t("contentType.create.field.namePlaceholder")}
                     autoComplete="off"
                   />
                   {invalid && <FieldError errors={field.state.meta.errors} />}
@@ -56,7 +58,7 @@ export function FieldRow({ form, fieldIndex, fieldsArray }: FieldRowProps) {
           variant="destructive"
           onClick={() => fieldsArray.removeValue(fieldIndex)}
         >
-          Remove Field
+          {t("contentType.create.field.removeField")}
         </Button>
       </div>
 
@@ -69,13 +71,19 @@ export function FieldRow({ form, fieldIndex, fieldsArray }: FieldRowProps) {
           return (
             <div>
               <Field data-invalid={invalid}>
-                <FieldLabel>Field Type</FieldLabel>
+                <FieldLabel>
+                  {t("contentType.create.field.typeLabel")}
+                </FieldLabel>
                 <Select
                   value={field.state.value}
                   onValueChange={(v) => field.handleChange(v)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
+                    <SelectValue
+                      placeholder={t(
+                        "contentType.create.field.typePlaceholder",
+                      )}
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {FIELD_TYPES.map((t) => (
@@ -100,7 +108,7 @@ export function FieldRow({ form, fieldIndex, fieldsArray }: FieldRowProps) {
               checked={field.state.value}
               onCheckedChange={(v) => field.handleChange(Boolean(v))}
             />
-            <Label>Value is required</Label>
+            <Label>{t("contentType.create.field.isRequiredLabel")}</Label>
           </div>
         )}
       />

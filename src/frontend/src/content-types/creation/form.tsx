@@ -1,7 +1,7 @@
 import { useCreateContentType } from "@/hooks/use-create-content-type";
 import { useForm } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
-import type { ContentTypeFormData } from "./types";
+import type { ContentTypeCreateFormData } from "../types";
 import { formSchema } from "./schema";
 import {
   Card,
@@ -22,9 +22,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { FieldRow } from "./fields/field-row";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export function CreateContentTypeForm() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const createContentType = useCreateContentType();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -33,20 +35,19 @@ export function CreateContentTypeForm() {
     defaultValues: {
       name: "",
       fields: [],
-    } as ContentTypeFormData,
+    } as ContentTypeCreateFormData,
     validators: {
       onSubmit: formSchema,
     },
     onSubmit: async ({ value }) => {
+      setErrorMessage(null);
       createContentType.mutate(value, {
         onSuccess: (data) => {
           form.reset();
-          navigate({ to: `/content-types/${data.id}` });
+          navigate({ to: "/content-types/$id", params: { id: data.id } });
         },
         onError: (_) => {
-          setErrorMessage(
-            "Failed to create content type. Please try again latter.",
-          );
+          setErrorMessage(t("contentType.create.errorRetry"));
         },
       });
     },
@@ -56,10 +57,9 @@ export function CreateContentTypeForm() {
     <div className="p-4 sm:p-8">
       <Card className="w-full sm:max-w-5xl mx-auto">
         <CardHeader>
-          <CardTitle>Create Content Type</CardTitle>
+          <CardTitle>{t("contentType.create.title")}</CardTitle>
           <CardDescription>
-            Define the structure for your content type with fields, validation
-            rules and transformation rules.
+            {t("contentType.create.description")}
           </CardDescription>
         </CardHeader>
 
@@ -87,7 +87,7 @@ export function CreateContentTypeForm() {
                   return (
                     <Field data-invalid={isInvalid}>
                       <FieldLabel htmlFor={field.name}>
-                        Content Type Name
+                        {t("contentType.create.nameLabel")}
                       </FieldLabel>
                       <Input
                         id={field.name}
@@ -96,13 +96,15 @@ export function CreateContentTypeForm() {
                         onBlur={field.handleBlur}
                         onChange={(e) => field.handleChange(e.target.value)}
                         aria-invalid={isInvalid}
-                        placeholder="e.g., Blog Posts, Products"
+                        placeholder={t("contentType.create.namePlaceholder")}
                         autoComplete="off"
                       />
                       {isInvalid && (
                         <FieldError errors={field.state.meta.errors} />
                       )}
-                      <FieldDescription>minimum 5 characters</FieldDescription>
+                      <FieldDescription>
+                        {t("contentType.create.nameHint")}
+                      </FieldDescription>
                     </Field>
                   );
                 }}
@@ -121,7 +123,7 @@ export function CreateContentTypeForm() {
                   return (
                     <Field data-invalid={isInvalid}>
                       <FieldLabel htmlFor={fieldsArray.name}>
-                        Fields:
+                        {t("contentType.create.fieldsLabel")}
                       </FieldLabel>
                       <div className="space-y-6">
                         {fieldsArray.state.value.map((_, fieldIndex) => (
@@ -148,7 +150,7 @@ export function CreateContentTypeForm() {
                           });
                         }}
                       >
-                        Add field
+                        {t("contentType.create.addField")}
                       </Button>
                     </Field>
                   );
@@ -166,7 +168,7 @@ export function CreateContentTypeForm() {
               onClick={() => form.reset()}
               disabled={createContentType.isPending}
             >
-              Reset
+              {t("contentType.create.reset")}
             </Button>
             <Button
               type="submit"
@@ -174,7 +176,9 @@ export function CreateContentTypeForm() {
               form="create-content-type"
               disabled={createContentType.isPending}
             >
-              {createContentType.isPending ? "Creating..." : "Submit"}
+              {createContentType.isPending
+                ? t("contentType.create.submitting")
+                : t("contentType.create.submit")}
             </Button>
           </Field>
         </CardFooter>
