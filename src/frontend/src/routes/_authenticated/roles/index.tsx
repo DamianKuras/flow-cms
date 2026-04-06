@@ -17,13 +17,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 
 import { useRoles, useDeleteRole, type RoleListItem } from "@/hooks/use-roles";
 
-export const Route = createFileRoute("/roles/")({
+export const Route = createFileRoute("/_authenticated/roles/")({
   component: RolesPage,
 });
 

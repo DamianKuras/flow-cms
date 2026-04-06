@@ -17,14 +17,14 @@ registerValidationRule("MinimumLengthValidationRule", {
   ),
   ConfigComponent: MinimumLengthConfig,
 });
-export function MinimumLengthConfig({ value, onChange }) {
+export function MinimumLengthConfig({ value, onChange }: { value: Record<string, unknown>; onChange: (v: Record<string, unknown>) => void }) {
   return (
     <div className="flex gap-2 items-center">
       <Label>Minimum Length</Label>
       <Input
         type="number"
         min={1}
-        value={value["min-length"] ?? ""}
+        value={(value["min-length"] as string | number) ?? ""}
         onChange={(e) => {
           const n = parseInt(e.target.value, 10);
           onChange({ ...value, "min-length": isNaN(n) ? undefined : n });

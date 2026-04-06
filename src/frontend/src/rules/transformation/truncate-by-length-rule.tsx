@@ -25,13 +25,13 @@ registerTransformationRule("TruncateByLength", {
   ConfigComponent: TruncateByLengthConfig,
 });
 
-function TruncateByLengthConfig({ value, onChange }) {
+function TruncateByLengthConfig({ value, onChange }: { value: Record<string, unknown>; onChange: (v: Record<string, unknown>) => void }) {
   return (
     <div className="flex gap-2 items-center">
       <Label>Max Length</Label>
       <Input
         type="number"
-        value={value.truncationLength ?? ""}
+        value={(value.truncationLength as string | number) ?? ""}
         onChange={(e) =>
           onChange({
             ...value,

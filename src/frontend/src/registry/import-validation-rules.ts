@@ -1,1 +1,1 @@
-const ruleModules = import.meta.glob("../rules/*/*.tsx", { eager: true });
+import.meta.glob("../rules/*/*.tsx", { eager: true });

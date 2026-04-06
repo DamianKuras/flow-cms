@@ -205,7 +205,7 @@ export function UsersTable() {
   );
 }
 
-export const Route = createFileRoute("/users/")({
+export const Route = createFileRoute("/_authenticated/users/")({
   component: RouteComponent,
 });
 

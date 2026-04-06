@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCreateRole } from "@/hooks/use-roles";
 
-export const Route = createFileRoute("/roles/new")({
+export const Route = createFileRoute("/_authenticated/roles/new")({
   component: NewRolePage,
 });
 

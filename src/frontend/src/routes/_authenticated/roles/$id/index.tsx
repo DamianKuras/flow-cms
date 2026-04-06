@@ -34,7 +34,7 @@ import {
 } from "@/hooks/use-roles";
 import { ResourcePicker } from "@/components/ResourcePicker";
 
-export const Route = createFileRoute("/roles/$id/")({
+export const Route = createFileRoute("/_authenticated/roles/$id/")({
   component: RoleDetailPage,
 });
 

@@ -10,42 +10,27 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as UsersIndexRouteImport } from './routes/users/index'
-import { Route as RolesIndexRouteImport } from './routes/roles/index'
 import { Route as LoginIndexRouteImport } from './routes/login/index'
-import { Route as ContentTypesIndexRouteImport } from './routes/content-types/index'
-import { Route as ContentItemsIndexRouteImport } from './routes/content-items/index'
-import { Route as UsersNewRouteImport } from './routes/users/new'
-import { Route as RolesNewRouteImport } from './routes/roles/new'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as UsersIdIndexRouteImport } from './routes/users/$id/index'
-import { Route as RolesIdIndexRouteImport } from './routes/roles/$id/index'
-import { Route as ContentTypesNewIndexRouteImport } from './routes/content-types/new/index'
-import { Route as ContentTypesIdIndexRouteImport } from './routes/content-types/$id/index'
-import { Route as ContentItemsIdIndexRouteImport } from './routes/content-items/$id/index'
-import { Route as UsersIdEditRouteImport } from './routes/users/$id/edit'
-import { Route as ContentItemsIdEditRouteImport } from './routes/content-items/$id/edit'
-import { Route as ContentTypesIdItemsIndexRouteImport } from './routes/content-types/$id/items/index'
-import { Route as ContentTypesIdItemsNewRouteImport } from './routes/content-types/$id/items/new'
+import { Route as AuthenticatedUsersIndexRouteImport } from './routes/_authenticated/users/index'
+import { Route as AuthenticatedRolesIndexRouteImport } from './routes/_authenticated/roles/index'
+import { Route as AuthenticatedContentTypesIndexRouteImport } from './routes/_authenticated/content-types/index'
+import { Route as AuthenticatedContentItemsIndexRouteImport } from './routes/_authenticated/content-items/index'
+import { Route as AuthenticatedUsersNewRouteImport } from './routes/_authenticated/users/new'
+import { Route as AuthenticatedRolesNewRouteImport } from './routes/_authenticated/roles/new'
+import { Route as AuthenticatedUsersIdIndexRouteImport } from './routes/_authenticated/users/$id/index'
+import { Route as AuthenticatedRolesIdIndexRouteImport } from './routes/_authenticated/roles/$id/index'
+import { Route as AuthenticatedContentTypesNewIndexRouteImport } from './routes/_authenticated/content-types/new/index'
+import { Route as AuthenticatedContentTypesIdIndexRouteImport } from './routes/_authenticated/content-types/$id/index'
+import { Route as AuthenticatedContentItemsIdIndexRouteImport } from './routes/_authenticated/content-items/$id/index'
+import { Route as AuthenticatedUsersIdEditRouteImport } from './routes/_authenticated/users/$id/edit'
+import { Route as AuthenticatedContentItemsIdEditRouteImport } from './routes/_authenticated/content-items/$id/edit'
+import { Route as AuthenticatedContentTypesIdItemsIndexRouteImport } from './routes/_authenticated/content-types/$id/items/index'
+import { Route as AuthenticatedContentTypesIdItemsNewRouteImport } from './routes/_authenticated/content-types/$id/items/new'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const UsersIndexRoute = UsersIndexRouteImport.update({
-  id: '/users/',
-  path: '/users/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RolesIndexRoute = RolesIndexRouteImport.update({
-  id: '/roles/',
-  path: '/roles/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginIndexRoute = LoginIndexRouteImport.update({
@@ -53,150 +38,175 @@ const LoginIndexRoute = LoginIndexRouteImport.update({
   path: '/login/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ContentTypesIndexRoute = ContentTypesIndexRouteImport.update({
-  id: '/content-types/',
-  path: '/content-types/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ContentItemsIndexRoute = ContentItemsIndexRouteImport.update({
-  id: '/content-items/',
-  path: '/content-items/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const UsersNewRoute = UsersNewRouteImport.update({
-  id: '/users/new',
-  path: '/users/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RolesNewRoute = RolesNewRouteImport.update({
-  id: '/roles/new',
-  path: '/roles/new',
-  getParentRoute: () => rootRouteImport,
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const UsersIdIndexRoute = UsersIdIndexRouteImport.update({
-  id: '/users/$id/',
-  path: '/users/$id/',
-  getParentRoute: () => rootRouteImport,
+const AuthenticatedUsersIndexRoute = AuthenticatedUsersIndexRouteImport.update({
+  id: '/users/',
+  path: '/users/',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
-const RolesIdIndexRoute = RolesIdIndexRouteImport.update({
-  id: '/roles/$id/',
-  path: '/roles/$id/',
-  getParentRoute: () => rootRouteImport,
+const AuthenticatedRolesIndexRoute = AuthenticatedRolesIndexRouteImport.update({
+  id: '/roles/',
+  path: '/roles/',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
-const ContentTypesNewIndexRoute = ContentTypesNewIndexRouteImport.update({
-  id: '/content-types/new/',
-  path: '/content-types/new/',
-  getParentRoute: () => rootRouteImport,
+const AuthenticatedContentTypesIndexRoute =
+  AuthenticatedContentTypesIndexRouteImport.update({
+    id: '/content-types/',
+    path: '/content-types/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedContentItemsIndexRoute =
+  AuthenticatedContentItemsIndexRouteImport.update({
+    id: '/content-items/',
+    path: '/content-items/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedUsersNewRoute = AuthenticatedUsersNewRouteImport.update({
+  id: '/users/new',
+  path: '/users/new',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
-const ContentTypesIdIndexRoute = ContentTypesIdIndexRouteImport.update({
-  id: '/content-types/$id/',
-  path: '/content-types/$id/',
-  getParentRoute: () => rootRouteImport,
+const AuthenticatedRolesNewRoute = AuthenticatedRolesNewRouteImport.update({
+  id: '/roles/new',
+  path: '/roles/new',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
-const ContentItemsIdIndexRoute = ContentItemsIdIndexRouteImport.update({
-  id: '/content-items/$id/',
-  path: '/content-items/$id/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const UsersIdEditRoute = UsersIdEditRouteImport.update({
-  id: '/users/$id/edit',
-  path: '/users/$id/edit',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ContentItemsIdEditRoute = ContentItemsIdEditRouteImport.update({
-  id: '/content-items/$id/edit',
-  path: '/content-items/$id/edit',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ContentTypesIdItemsIndexRoute =
-  ContentTypesIdItemsIndexRouteImport.update({
+const AuthenticatedUsersIdIndexRoute =
+  AuthenticatedUsersIdIndexRouteImport.update({
+    id: '/users/$id/',
+    path: '/users/$id/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedRolesIdIndexRoute =
+  AuthenticatedRolesIdIndexRouteImport.update({
+    id: '/roles/$id/',
+    path: '/roles/$id/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedContentTypesNewIndexRoute =
+  AuthenticatedContentTypesNewIndexRouteImport.update({
+    id: '/content-types/new/',
+    path: '/content-types/new/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedContentTypesIdIndexRoute =
+  AuthenticatedContentTypesIdIndexRouteImport.update({
+    id: '/content-types/$id/',
+    path: '/content-types/$id/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedContentItemsIdIndexRoute =
+  AuthenticatedContentItemsIdIndexRouteImport.update({
+    id: '/content-items/$id/',
+    path: '/content-items/$id/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedUsersIdEditRoute =
+  AuthenticatedUsersIdEditRouteImport.update({
+    id: '/users/$id/edit',
+    path: '/users/$id/edit',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedContentItemsIdEditRoute =
+  AuthenticatedContentItemsIdEditRouteImport.update({
+    id: '/content-items/$id/edit',
+    path: '/content-items/$id/edit',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedContentTypesIdItemsIndexRoute =
+  AuthenticatedContentTypesIdItemsIndexRouteImport.update({
     id: '/content-types/$id/items/',
     path: '/content-types/$id/items/',
-    getParentRoute: () => rootRouteImport,
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
-const ContentTypesIdItemsNewRoute = ContentTypesIdItemsNewRouteImport.update({
-  id: '/content-types/$id/items/new',
-  path: '/content-types/$id/items/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const AuthenticatedContentTypesIdItemsNewRoute =
+  AuthenticatedContentTypesIdItemsNewRouteImport.update({
+    id: '/content-types/$id/items/new',
+    path: '/content-types/$id/items/new',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/roles/new': typeof RolesNewRoute
-  '/users/new': typeof UsersNewRoute
-  '/content-items': typeof ContentItemsIndexRoute
-  '/content-types': typeof ContentTypesIndexRoute
+  '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginIndexRoute
-  '/roles': typeof RolesIndexRoute
-  '/users': typeof UsersIndexRoute
-  '/content-items/$id/edit': typeof ContentItemsIdEditRoute
-  '/users/$id/edit': typeof UsersIdEditRoute
-  '/content-items/$id': typeof ContentItemsIdIndexRoute
-  '/content-types/$id': typeof ContentTypesIdIndexRoute
-  '/content-types/new': typeof ContentTypesNewIndexRoute
-  '/roles/$id': typeof RolesIdIndexRoute
-  '/users/$id': typeof UsersIdIndexRoute
-  '/content-types/$id/items/new': typeof ContentTypesIdItemsNewRoute
-  '/content-types/$id/items': typeof ContentTypesIdItemsIndexRoute
+  '/roles/new': typeof AuthenticatedRolesNewRoute
+  '/users/new': typeof AuthenticatedUsersNewRoute
+  '/content-items': typeof AuthenticatedContentItemsIndexRoute
+  '/content-types': typeof AuthenticatedContentTypesIndexRoute
+  '/roles': typeof AuthenticatedRolesIndexRoute
+  '/users': typeof AuthenticatedUsersIndexRoute
+  '/content-items/$id/edit': typeof AuthenticatedContentItemsIdEditRoute
+  '/users/$id/edit': typeof AuthenticatedUsersIdEditRoute
+  '/content-items/$id': typeof AuthenticatedContentItemsIdIndexRoute
+  '/content-types/$id': typeof AuthenticatedContentTypesIdIndexRoute
+  '/content-types/new': typeof AuthenticatedContentTypesNewIndexRoute
+  '/roles/$id': typeof AuthenticatedRolesIdIndexRoute
+  '/users/$id': typeof AuthenticatedUsersIdIndexRoute
+  '/content-types/$id/items/new': typeof AuthenticatedContentTypesIdItemsNewRoute
+  '/content-types/$id/items': typeof AuthenticatedContentTypesIdItemsIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/roles/new': typeof RolesNewRoute
-  '/users/new': typeof UsersNewRoute
-  '/content-items': typeof ContentItemsIndexRoute
-  '/content-types': typeof ContentTypesIndexRoute
+  '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginIndexRoute
-  '/roles': typeof RolesIndexRoute
-  '/users': typeof UsersIndexRoute
-  '/content-items/$id/edit': typeof ContentItemsIdEditRoute
-  '/users/$id/edit': typeof UsersIdEditRoute
-  '/content-items/$id': typeof ContentItemsIdIndexRoute
-  '/content-types/$id': typeof ContentTypesIdIndexRoute
-  '/content-types/new': typeof ContentTypesNewIndexRoute
-  '/roles/$id': typeof RolesIdIndexRoute
-  '/users/$id': typeof UsersIdIndexRoute
-  '/content-types/$id/items/new': typeof ContentTypesIdItemsNewRoute
-  '/content-types/$id/items': typeof ContentTypesIdItemsIndexRoute
+  '/roles/new': typeof AuthenticatedRolesNewRoute
+  '/users/new': typeof AuthenticatedUsersNewRoute
+  '/content-items': typeof AuthenticatedContentItemsIndexRoute
+  '/content-types': typeof AuthenticatedContentTypesIndexRoute
+  '/roles': typeof AuthenticatedRolesIndexRoute
+  '/users': typeof AuthenticatedUsersIndexRoute
+  '/content-items/$id/edit': typeof AuthenticatedContentItemsIdEditRoute
+  '/users/$id/edit': typeof AuthenticatedUsersIdEditRoute
+  '/content-items/$id': typeof AuthenticatedContentItemsIdIndexRoute
+  '/content-types/$id': typeof AuthenticatedContentTypesIdIndexRoute
+  '/content-types/new': typeof AuthenticatedContentTypesNewIndexRoute
+  '/roles/$id': typeof AuthenticatedRolesIdIndexRoute
+  '/users/$id': typeof AuthenticatedUsersIdIndexRoute
+  '/content-types/$id/items/new': typeof AuthenticatedContentTypesIdItemsNewRoute
+  '/content-types/$id/items': typeof AuthenticatedContentTypesIdItemsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/roles/new': typeof RolesNewRoute
-  '/users/new': typeof UsersNewRoute
-  '/content-items/': typeof ContentItemsIndexRoute
-  '/content-types/': typeof ContentTypesIndexRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
   '/login/': typeof LoginIndexRoute
-  '/roles/': typeof RolesIndexRoute
-  '/users/': typeof UsersIndexRoute
-  '/content-items/$id/edit': typeof ContentItemsIdEditRoute
-  '/users/$id/edit': typeof UsersIdEditRoute
-  '/content-items/$id/': typeof ContentItemsIdIndexRoute
-  '/content-types/$id/': typeof ContentTypesIdIndexRoute
-  '/content-types/new/': typeof ContentTypesNewIndexRoute
-  '/roles/$id/': typeof RolesIdIndexRoute
-  '/users/$id/': typeof UsersIdIndexRoute
-  '/content-types/$id/items/new': typeof ContentTypesIdItemsNewRoute
-  '/content-types/$id/items/': typeof ContentTypesIdItemsIndexRoute
+  '/_authenticated/roles/new': typeof AuthenticatedRolesNewRoute
+  '/_authenticated/users/new': typeof AuthenticatedUsersNewRoute
+  '/_authenticated/content-items/': typeof AuthenticatedContentItemsIndexRoute
+  '/_authenticated/content-types/': typeof AuthenticatedContentTypesIndexRoute
+  '/_authenticated/roles/': typeof AuthenticatedRolesIndexRoute
+  '/_authenticated/users/': typeof AuthenticatedUsersIndexRoute
+  '/_authenticated/content-items/$id/edit': typeof AuthenticatedContentItemsIdEditRoute
+  '/_authenticated/users/$id/edit': typeof AuthenticatedUsersIdEditRoute
+  '/_authenticated/content-items/$id/': typeof AuthenticatedContentItemsIdIndexRoute
+  '/_authenticated/content-types/$id/': typeof AuthenticatedContentTypesIdIndexRoute
+  '/_authenticated/content-types/new/': typeof AuthenticatedContentTypesNewIndexRoute
+  '/_authenticated/roles/$id/': typeof AuthenticatedRolesIdIndexRoute
+  '/_authenticated/users/$id/': typeof AuthenticatedUsersIdIndexRoute
+  '/_authenticated/content-types/$id/items/new': typeof AuthenticatedContentTypesIdItemsNewRoute
+  '/_authenticated/content-types/$id/items/': typeof AuthenticatedContentTypesIdItemsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
     | '/dashboard'
+    | '/'
+    | '/login'
     | '/roles/new'
     | '/users/new'
     | '/content-items'
     | '/content-types'
-    | '/login'
     | '/roles'
     | '/users'
     | '/content-items/$id/edit'
@@ -210,13 +220,13 @@ export interface FileRouteTypes {
     | '/content-types/$id/items'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
     | '/dashboard'
+    | '/'
+    | '/login'
     | '/roles/new'
     | '/users/new'
     | '/content-items'
     | '/content-types'
-    | '/login'
     | '/roles'
     | '/users'
     | '/content-items/$id/edit'
@@ -230,46 +240,30 @@ export interface FileRouteTypes {
     | '/content-types/$id/items'
   id:
     | '__root__'
-    | '/'
     | '/_authenticated'
     | '/_authenticated/dashboard'
-    | '/roles/new'
-    | '/users/new'
-    | '/content-items/'
-    | '/content-types/'
+    | '/_authenticated/'
     | '/login/'
-    | '/roles/'
-    | '/users/'
-    | '/content-items/$id/edit'
-    | '/users/$id/edit'
-    | '/content-items/$id/'
-    | '/content-types/$id/'
-    | '/content-types/new/'
-    | '/roles/$id/'
-    | '/users/$id/'
-    | '/content-types/$id/items/new'
-    | '/content-types/$id/items/'
+    | '/_authenticated/roles/new'
+    | '/_authenticated/users/new'
+    | '/_authenticated/content-items/'
+    | '/_authenticated/content-types/'
+    | '/_authenticated/roles/'
+    | '/_authenticated/users/'
+    | '/_authenticated/content-items/$id/edit'
+    | '/_authenticated/users/$id/edit'
+    | '/_authenticated/content-items/$id/'
+    | '/_authenticated/content-types/$id/'
+    | '/_authenticated/content-types/new/'
+    | '/_authenticated/roles/$id/'
+    | '/_authenticated/users/$id/'
+    | '/_authenticated/content-types/$id/items/new'
+    | '/_authenticated/content-types/$id/items/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
-  RolesNewRoute: typeof RolesNewRoute
-  UsersNewRoute: typeof UsersNewRoute
-  ContentItemsIndexRoute: typeof ContentItemsIndexRoute
-  ContentTypesIndexRoute: typeof ContentTypesIndexRoute
   LoginIndexRoute: typeof LoginIndexRoute
-  RolesIndexRoute: typeof RolesIndexRoute
-  UsersIndexRoute: typeof UsersIndexRoute
-  ContentItemsIdEditRoute: typeof ContentItemsIdEditRoute
-  UsersIdEditRoute: typeof UsersIdEditRoute
-  ContentItemsIdIndexRoute: typeof ContentItemsIdIndexRoute
-  ContentTypesIdIndexRoute: typeof ContentTypesIdIndexRoute
-  ContentTypesNewIndexRoute: typeof ContentTypesNewIndexRoute
-  RolesIdIndexRoute: typeof RolesIdIndexRoute
-  UsersIdIndexRoute: typeof UsersIdIndexRoute
-  ContentTypesIdItemsNewRoute: typeof ContentTypesIdItemsNewRoute
-  ContentTypesIdItemsIndexRoute: typeof ContentTypesIdItemsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -281,27 +275,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/users/': {
-      id: '/users/'
-      path: '/users'
-      fullPath: '/users'
-      preLoaderRoute: typeof UsersIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/roles/': {
-      id: '/roles/'
-      path: '/roles'
-      fullPath: '/roles'
-      preLoaderRoute: typeof RolesIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/login/': {
       id: '/login/'
       path: '/login'
@@ -309,33 +282,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/content-types/': {
-      id: '/content-types/'
-      path: '/content-types'
-      fullPath: '/content-types'
-      preLoaderRoute: typeof ContentTypesIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/content-items/': {
-      id: '/content-items/'
-      path: '/content-items'
-      fullPath: '/content-items'
-      preLoaderRoute: typeof ContentItemsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/users/new': {
-      id: '/users/new'
-      path: '/users/new'
-      fullPath: '/users/new'
-      preLoaderRoute: typeof UsersNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/roles/new': {
-      id: '/roles/new'
-      path: '/roles/new'
-      fullPath: '/roles/new'
-      preLoaderRoute: typeof RolesNewRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_authenticated/': {
+      id: '/_authenticated/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
@@ -344,78 +296,155 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/users/$id/': {
-      id: '/users/$id/'
+    '/_authenticated/users/': {
+      id: '/_authenticated/users/'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof AuthenticatedUsersIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/roles/': {
+      id: '/_authenticated/roles/'
+      path: '/roles'
+      fullPath: '/roles'
+      preLoaderRoute: typeof AuthenticatedRolesIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/content-types/': {
+      id: '/_authenticated/content-types/'
+      path: '/content-types'
+      fullPath: '/content-types'
+      preLoaderRoute: typeof AuthenticatedContentTypesIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/content-items/': {
+      id: '/_authenticated/content-items/'
+      path: '/content-items'
+      fullPath: '/content-items'
+      preLoaderRoute: typeof AuthenticatedContentItemsIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/users/new': {
+      id: '/_authenticated/users/new'
+      path: '/users/new'
+      fullPath: '/users/new'
+      preLoaderRoute: typeof AuthenticatedUsersNewRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/roles/new': {
+      id: '/_authenticated/roles/new'
+      path: '/roles/new'
+      fullPath: '/roles/new'
+      preLoaderRoute: typeof AuthenticatedRolesNewRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/users/$id/': {
+      id: '/_authenticated/users/$id/'
       path: '/users/$id'
       fullPath: '/users/$id'
-      preLoaderRoute: typeof UsersIdIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedUsersIdIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/roles/$id/': {
-      id: '/roles/$id/'
+    '/_authenticated/roles/$id/': {
+      id: '/_authenticated/roles/$id/'
       path: '/roles/$id'
       fullPath: '/roles/$id'
-      preLoaderRoute: typeof RolesIdIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedRolesIdIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/content-types/new/': {
-      id: '/content-types/new/'
+    '/_authenticated/content-types/new/': {
+      id: '/_authenticated/content-types/new/'
       path: '/content-types/new'
       fullPath: '/content-types/new'
-      preLoaderRoute: typeof ContentTypesNewIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedContentTypesNewIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/content-types/$id/': {
-      id: '/content-types/$id/'
+    '/_authenticated/content-types/$id/': {
+      id: '/_authenticated/content-types/$id/'
       path: '/content-types/$id'
       fullPath: '/content-types/$id'
-      preLoaderRoute: typeof ContentTypesIdIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedContentTypesIdIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/content-items/$id/': {
-      id: '/content-items/$id/'
+    '/_authenticated/content-items/$id/': {
+      id: '/_authenticated/content-items/$id/'
       path: '/content-items/$id'
       fullPath: '/content-items/$id'
-      preLoaderRoute: typeof ContentItemsIdIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedContentItemsIdIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/users/$id/edit': {
-      id: '/users/$id/edit'
+    '/_authenticated/users/$id/edit': {
+      id: '/_authenticated/users/$id/edit'
       path: '/users/$id/edit'
       fullPath: '/users/$id/edit'
-      preLoaderRoute: typeof UsersIdEditRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedUsersIdEditRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/content-items/$id/edit': {
-      id: '/content-items/$id/edit'
+    '/_authenticated/content-items/$id/edit': {
+      id: '/_authenticated/content-items/$id/edit'
       path: '/content-items/$id/edit'
       fullPath: '/content-items/$id/edit'
-      preLoaderRoute: typeof ContentItemsIdEditRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedContentItemsIdEditRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/content-types/$id/items/': {
-      id: '/content-types/$id/items/'
+    '/_authenticated/content-types/$id/items/': {
+      id: '/_authenticated/content-types/$id/items/'
       path: '/content-types/$id/items'
       fullPath: '/content-types/$id/items'
-      preLoaderRoute: typeof ContentTypesIdItemsIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedContentTypesIdItemsIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
-    '/content-types/$id/items/new': {
-      id: '/content-types/$id/items/new'
+    '/_authenticated/content-types/$id/items/new': {
+      id: '/_authenticated/content-types/$id/items/new'
       path: '/content-types/$id/items/new'
       fullPath: '/content-types/$id/items/new'
-      preLoaderRoute: typeof ContentTypesIdItemsNewRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedContentTypesIdItemsNewRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
   }
 }
 
 interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedRolesNewRoute: typeof AuthenticatedRolesNewRoute
+  AuthenticatedUsersNewRoute: typeof AuthenticatedUsersNewRoute
+  AuthenticatedContentItemsIndexRoute: typeof AuthenticatedContentItemsIndexRoute
+  AuthenticatedContentTypesIndexRoute: typeof AuthenticatedContentTypesIndexRoute
+  AuthenticatedRolesIndexRoute: typeof AuthenticatedRolesIndexRoute
+  AuthenticatedUsersIndexRoute: typeof AuthenticatedUsersIndexRoute
+  AuthenticatedContentItemsIdEditRoute: typeof AuthenticatedContentItemsIdEditRoute
+  AuthenticatedUsersIdEditRoute: typeof AuthenticatedUsersIdEditRoute
+  AuthenticatedContentItemsIdIndexRoute: typeof AuthenticatedContentItemsIdIndexRoute
+  AuthenticatedContentTypesIdIndexRoute: typeof AuthenticatedContentTypesIdIndexRoute
+  AuthenticatedContentTypesNewIndexRoute: typeof AuthenticatedContentTypesNewIndexRoute
+  AuthenticatedRolesIdIndexRoute: typeof AuthenticatedRolesIdIndexRoute
+  AuthenticatedUsersIdIndexRoute: typeof AuthenticatedUsersIdIndexRoute
+  AuthenticatedContentTypesIdItemsNewRoute: typeof AuthenticatedContentTypesIdItemsNewRoute
+  AuthenticatedContentTypesIdItemsIndexRoute: typeof AuthenticatedContentTypesIdItemsIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedRolesNewRoute: AuthenticatedRolesNewRoute,
+  AuthenticatedUsersNewRoute: AuthenticatedUsersNewRoute,
+  AuthenticatedContentItemsIndexRoute: AuthenticatedContentItemsIndexRoute,
+  AuthenticatedContentTypesIndexRoute: AuthenticatedContentTypesIndexRoute,
+  AuthenticatedRolesIndexRoute: AuthenticatedRolesIndexRoute,
+  AuthenticatedUsersIndexRoute: AuthenticatedUsersIndexRoute,
+  AuthenticatedContentItemsIdEditRoute: AuthenticatedContentItemsIdEditRoute,
+  AuthenticatedUsersIdEditRoute: AuthenticatedUsersIdEditRoute,
+  AuthenticatedContentItemsIdIndexRoute: AuthenticatedContentItemsIdIndexRoute,
+  AuthenticatedContentTypesIdIndexRoute: AuthenticatedContentTypesIdIndexRoute,
+  AuthenticatedContentTypesNewIndexRoute:
+    AuthenticatedContentTypesNewIndexRoute,
+  AuthenticatedRolesIdIndexRoute: AuthenticatedRolesIdIndexRoute,
+  AuthenticatedUsersIdIndexRoute: AuthenticatedUsersIdIndexRoute,
+  AuthenticatedContentTypesIdItemsNewRoute:
+    AuthenticatedContentTypesIdItemsNewRoute,
+  AuthenticatedContentTypesIdItemsIndexRoute:
+    AuthenticatedContentTypesIdItemsIndexRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
@@ -423,24 +452,8 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 )
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
-  RolesNewRoute: RolesNewRoute,
-  UsersNewRoute: UsersNewRoute,
-  ContentItemsIndexRoute: ContentItemsIndexRoute,
-  ContentTypesIndexRoute: ContentTypesIndexRoute,
   LoginIndexRoute: LoginIndexRoute,
-  RolesIndexRoute: RolesIndexRoute,
-  UsersIndexRoute: UsersIndexRoute,
-  ContentItemsIdEditRoute: ContentItemsIdEditRoute,
-  UsersIdEditRoute: UsersIdEditRoute,
-  ContentItemsIdIndexRoute: ContentItemsIdIndexRoute,
-  ContentTypesIdIndexRoute: ContentTypesIdIndexRoute,
-  ContentTypesNewIndexRoute: ContentTypesNewIndexRoute,
-  RolesIdIndexRoute: RolesIdIndexRoute,
-  UsersIdIndexRoute: UsersIdIndexRoute,
-  ContentTypesIdItemsNewRoute: ContentTypesIdItemsNewRoute,
-  ContentTypesIdItemsIndexRoute: ContentTypesIdItemsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
