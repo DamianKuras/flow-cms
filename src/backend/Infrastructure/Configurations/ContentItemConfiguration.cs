@@ -13,6 +13,8 @@ internal class ContentItemConfiguration : IEntityTypeConfiguration<ContentItem>
         builder.ToTable("content_items");
         builder.HasKey(c => c.Id);
 
+        builder.Property(c => c.Title).HasColumnName("title");
+
         builder.Property(c => c.ContentTypeId).HasColumnName("content_type_id");
 
         builder.Property(c => c.Status).HasColumnName("status");

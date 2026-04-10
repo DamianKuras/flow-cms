@@ -12,33 +12,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useContentType, type FieldDto } from "@/hooks/use-content-type";
 import { useApiClient } from "@/hooks/use-api-client";
-import {
-  createFileRoute,
-  useNavigate,
-} from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AlertCircle, ArrowLeft, Loader2 } from "lucide-react";
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { getValidationRule } from "@/registry/validation-rule-registry";
+import { useState, useEffect } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-export const Route = createFileRoute("/_authenticated/content-types/$id/items/new")({
+export const Route = createFileRoute("/_authenticated/content-items/$id/edit")({
   component: RouteComponent,
 });
 
-function getApiErrorMessage(error: any): string {
-  const data = error?.response?.data;
-  if (!data) return error?.message ?? "An unexpected error occurred.";
-  // ValidationProblem — field-level errors
-  if (data.errors) {
-    return Object.entries(data.errors as Record<string, string[]>)
-      .map(([field, msgs]) => `${field}: ${msgs.join(", ")}`)
-      .join(" | ");
-  }
-  // ProblemDetails — single detail message
-  if (data.detail) return data.detail;
-  if (data.title) return data.title;
-  return error?.message ?? "An unexpected error occurred.";
-}
+type ContentItem = {
+  id: string;
+  name: string;
+  contentTypeId: string;
+  status: string;
+  values: Record<string, { value: any }>;
+};
 
 type ContentTypeDto = {
   id: string;
@@ -53,36 +42,84 @@ type FormValues = {
   fieldValues: Record<string, any>;
 };
 
+function useContentItem(id: string) {
+  const api = useApiClient();
+
+  return useQuery({
+    queryKey: ["content-item", id],
+    queryFn: async (): Promise<ContentItem> => {
+      const response = await api.get<ContentItem>(`/content-items/${id}`);
+      return response.data;
+    },
+    enabled: !!id,
+  });
+}
+
 function RouteComponent() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const api = useApiClient();
   const queryClient = useQueryClient();
 
-  const { data, error, isLoading } = useContentType(id);
+  const {
+    data: contentItem,
+    error: itemError,
+    isLoading: itemLoading,
+  } = useContentItem(id);
+
+  const {
+    data: contentTypeData,
+    error: typeError,
+    isLoading: typeLoading,
+  } = useContentType(contentItem?.contentTypeId || "");
 
   const [formValues, setFormValues] = useState<FormValues>({
     title: "",
     fieldValues: {},
   });
   const [validationErrors, setValidationErrors] = useState<
-    Record<string, string[]>
+    Record<string, string>
   >({});
 
-  const createMutation = useMutation({
+  useEffect(() => {
+    if (contentItem && contentTypeData?.contentType) {
+      const contentType = contentTypeData.contentType;
+
+      const fieldValues: Record<string, any> = {};
+
+      if (contentItem.values) {
+        contentType.fields.forEach((field) => {
+          const fieldData = contentItem.values[field.name];
+          if (fieldData) {
+            fieldValues[field.id] = fieldData.value;
+          }
+        });
+      }
+
+      setFormValues({
+        title: contentItem.name || "",
+        fieldValues,
+      });
+    }
+  }, [contentItem, contentTypeData]);
+
+  const updateMutation = useMutation({
     mutationFn: async (values: FormValues) => {
       const payload = {
         title: values.title,
-        contentTypeId: id,
+        contentTypeId: contentItem!.contentTypeId,
         values: values.fieldValues,
       };
 
-      const response = await api.post(`/content-items`, payload);
+      const response = await api.patch(`/content-items/${id}`, payload);
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["content", id] });
-      navigate({ to: "/content-types/$id/items", params: { id } });
+      queryClient.invalidateQueries({ queryKey: ["content-item", id] });
+      queryClient.invalidateQueries({
+        queryKey: ["content", contentItem?.contentTypeId],
+      });
+      navigate({ to: `/content-items/${id}` });
     },
     onError: () => {},
   });
@@ -116,45 +153,19 @@ function RouteComponent() {
     }
   };
 
-  const validateField = (field: FieldDto, value: string | null) => {
-    const errors: string[] = [];
-
-    // required
-    if (field.isRequired && (value === "" || value == null)) {
-      errors.push(`${field.name} is required`);
-    }
-
-    // validation rules
-    for (const rule of field.validationRules ?? []) {
-      const plugin = getValidationRule(rule.type);
-      if (plugin) {
-        const error = plugin.validate(
-          value,
-          rule.parameters || {},
-          formValues.fieldValues,
-        );
-        if (error) {
-          errors.push(error);
-        }
-      }
-    }
-
-    return errors;
-  };
-
   const validateForm = (contentType: ContentTypeDto): boolean => {
-    const errors: Record<string, string[]> = {};
+    const errors: Record<string, string> = {};
 
     if (!formValues.title?.trim()) {
-      errors.title = ["Title is required"];
+      errors.title = "Title is required";
     }
 
     contentType.fields.forEach((field) => {
-      const value = formValues.fieldValues[field.id];
-      const fieldErrors = validateField(field, value);
-
-      if (fieldErrors.length > 0) {
-        errors[field.id] = fieldErrors;
+      if (field.isRequired) {
+        const value = formValues.fieldValues[field.id];
+        if (value === undefined || value === null || value === "") {
+          errors[field.id] = `${field.name} is required`;
+        }
       }
     });
 
@@ -165,12 +176,18 @@ function RouteComponent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!data?.contentType || !validateForm(data.contentType)) {
+    if (
+      !contentTypeData?.contentType ||
+      !validateForm(contentTypeData.contentType)
+    ) {
       return;
     }
 
-    createMutation.mutate(formValues);
+    updateMutation.mutate(formValues);
   };
+
+  const isLoading = itemLoading || typeLoading;
+  const error = itemError || typeError;
 
   if (isLoading) {
     return (
@@ -187,30 +204,31 @@ function RouteComponent() {
       <div className="flex-1 p-6">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error Loading Content Type</AlertTitle>
+          <AlertTitle>Error Loading Data</AlertTitle>
           <AlertDescription>
-            {error.message || "Could not load content type information."}
+            {error.message ||
+              "Could not load content item or content type information."}
           </AlertDescription>
         </Alert>
       </div>
     );
   }
 
-  if (!data?.contentType) {
+  if (!contentItem || !contentTypeData?.contentType) {
     return (
       <div className="flex-1 p-6">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Content Type Not Found</AlertTitle>
+          <AlertTitle>Content Not Found</AlertTitle>
           <AlertDescription>
-            The content type could not be loaded.
+            The content item or content type could not be loaded.
           </AlertDescription>
         </Alert>
       </div>
     );
   }
 
-  const contentType = data.contentType;
+  const contentType = contentTypeData.contentType;
 
   return (
     <div className="flex-1 space-y-6 p-6 max-w-4xl mx-auto">
@@ -218,14 +236,14 @@ function RouteComponent() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate({ to: `/content-types/${id}/items` })}
+          onClick={() => navigate({ to: `/content-items/${id}` })}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to {contentType.name}
+          Back to Content Item
         </Button>
-        <h1 className="text-3xl font-bold">Create New Content Item</h1>
+        <h1 className="text-3xl font-bold">Edit Content Item</h1>
         <p className="text-muted-foreground">
-          Creating content of type:{" "}
+          Editing content of type:{" "}
           <span className="font-semibold">{contentType.name}</span>
         </p>
       </div>
@@ -235,7 +253,7 @@ function RouteComponent() {
           <CardHeader>
             <CardTitle>Basic Information</CardTitle>
             <CardDescription>
-              Enter the basic details for this content item
+              Edit the basic details for this content item
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -264,7 +282,7 @@ function RouteComponent() {
             <CardHeader>
               <CardTitle>Content Fields</CardTitle>
               <CardDescription>
-                Enter values for the content fields
+                Edit values for the content fields
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -291,7 +309,7 @@ function RouteComponent() {
                     />
                   )}
 
-                  {(field.type === "LongText" || field.type === "RichText") && (
+                  {(field.type === "LongText" || field.type === "Richtext") && (
                     <Textarea
                       id={field.id}
                       value={formValues.fieldValues[field.id] || ""}
@@ -306,7 +324,7 @@ function RouteComponent() {
                     />
                   )}
 
-                  {field.type === "Numeric" && (
+                  {field.type === "Number" && (
                     <Input
                       id={field.id}
                       type="number"
@@ -329,8 +347,8 @@ function RouteComponent() {
                     "Text",
                     "ShortText",
                     "LongText",
-                    "RichText",
-                    "Numeric",
+                    "Richtext",
+                    "Number",
                   ].includes(field.type) && (
                     <Input
                       id={field.id}
@@ -345,60 +363,40 @@ function RouteComponent() {
                     />
                   )}
 
-                  {validationErrors[field.id]?.length > 0 && (
-                    <div className="space-y-1 text-sm text-destructive">
-                      {validationErrors[field.id].map((msg, i) => (
-                        <p key={i}>{msg}</p>
-                      ))}
-                    </div>
+                  {validationErrors[field.id] && (
+                    <p className="text-sm text-destructive">
+                      {validationErrors[field.id]}
+                    </p>
                   )}
-
-                  {field.validationRules?.map((rule) => {
-                    const plugin = getValidationRule(rule.type);
-                    if (!plugin || !plugin.HintComponent) return null;
-
-                    const Hint = plugin.HintComponent;
-                    return (
-                      <Hint key={rule.type} params={rule.parameters || {}} />
-                    );
-                  })}
-                  {field.transformationRules?.map((rule) => {
-                    const plugin = getValidationRule(rule.type);
-                    if (!plugin || !plugin.HintComponent) return null;
-
-                    const Hint = plugin.HintComponent;
-                    return (
-                      <Hint key={rule.type} params={rule.parameters || {}} />
-                    );
-                  })}
                 </div>
               ))}
             </CardContent>
           </Card>
         )}
 
-        {createMutation.isError && (
+        {updateMutation.isError && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error Creating Content Item</AlertTitle>
+            <AlertTitle>Error Updating Content Item</AlertTitle>
             <AlertDescription>
-              {getApiErrorMessage(createMutation.error)}
+              {updateMutation.error?.message ||
+                "An unexpected error occurred. Please try again."}
             </AlertDescription>
           </Alert>
         )}
 
         <div className="flex gap-3">
-          <Button type="submit" disabled={createMutation.isPending}>
-            {createMutation.isPending && (
+          <Button type="submit" disabled={updateMutation.isPending}>
+            {updateMutation.isPending && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             )}
-            Create Content Item
+            Save Changes
           </Button>
           <Button
             type="button"
             variant="outline"
-            onClick={() => navigate({ to: `/content-types/${id}/items` })}
-            disabled={createMutation.isPending}
+            onClick={() => navigate({ to: `/content-items/${id}` })}
+            disabled={updateMutation.isPending}
           >
             Cancel
           </Button>
