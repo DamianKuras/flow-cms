@@ -25,4 +25,16 @@ public static class ContentItemApi
 
     public static async Task<ContentItemDto> Get(HttpClient client, Guid id) =>
         await client.GetAsync($"/content-items/{id}").Result.ReadJsonAsync<ContentItemDto>();
+
+    public static async Task<Guid> Publish(HttpClient client, Guid draftId)
+    {
+        HttpResponseMessage response = await client.PostAsJsonAsync(
+            $"/content-items/{draftId}/publish",
+            new { }
+        );
+        response.EnsureSuccessStatusCode();
+        return (await response.ReadJsonAsync<PublishedResponse>()).Id;
+    }
+
+    private record PublishedResponse(Guid Id);
 }

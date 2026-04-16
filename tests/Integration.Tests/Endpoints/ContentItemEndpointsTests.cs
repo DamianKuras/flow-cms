@@ -264,6 +264,123 @@ public class ContentItemEndpointsTests
         Assert.NotEqual(Guid.Empty, item.Id);
     }
 
+    #region POST /content-items/{id}/publish
+
+    [Fact]
+    public async Task PublishContentItem_WithoutAuth_ReturnsUnauthorized()
+    {
+        HttpResponseMessage response = await _client.PostAsJsonAsync(
+            $"{REQUEST_URI_CONTENT_ITEMS}/{Guid.NewGuid()}/publish",
+            new { }
+        );
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PublishContentItem_WithNonExistentId_ReturnsNotFound()
+    {
+        _client.AddAuthToken(await AuthenticationHelper.GetAdminAuthTokenAsync(_client));
+
+        HttpResponseMessage response = await _client.PostAsJsonAsync(
+            $"{REQUEST_URI_CONTENT_ITEMS}/{Guid.NewGuid()}/publish",
+            new { }
+        );
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PublishContentItem_WithValidDraft_ReturnsOkWithPublishedId()
+    {
+        _client.AddAuthToken(await AuthenticationHelper.GetAdminAuthTokenAsync(_client));
+
+        ContentTypeDto type = await ContentTypeBuilder
+            .Create(_client)
+            .TextField("Title")
+            .BuildAsync();
+
+        Guid draftId = await ContentItemApi.Create(_client, type, v => v.Set("Title", "Hello"));
+
+        HttpResponseMessage response = await _client.PostAsJsonAsync(
+            $"{REQUEST_URI_CONTENT_ITEMS}/{draftId}/publish",
+            new { }
+        );
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        Guid publishedId = (await response.ReadJsonAsync<PublishedIdResponse>()).Id;
+        Assert.NotEqual(Guid.Empty, publishedId);
+        Assert.NotEqual(draftId, publishedId);
+
+        ContentItemDto published = await ContentItemApi.Get(_client, publishedId);
+        Assert.Equal("Published", published.Status);
+        Assert.Equal(1, published.Version);
+    }
+
+    [Fact]
+    public async Task PublishContentItem_DraftRemainsAfterPublish()
+    {
+        _client.AddAuthToken(await AuthenticationHelper.GetAdminAuthTokenAsync(_client));
+
+        ContentTypeDto type = await ContentTypeBuilder.Create(_client).TextField("Body").BuildAsync();
+        Guid draftId = await ContentItemApi.Create(_client, type, v => v.Set("Body", "content"));
+
+        await ContentItemApi.Publish(_client, draftId);
+
+        ContentItemDto draft = await ContentItemApi.Get(_client, draftId);
+        Assert.Equal("Draft", draft.Status);
+    }
+
+    [Fact]
+    public async Task PublishContentItem_SecondPublish_IncreasesVersionAndArchivesPrevious()
+    {
+        _client.AddAuthToken(await AuthenticationHelper.GetAdminAuthTokenAsync(_client));
+
+        ContentTypeDto type = await ContentTypeBuilder.Create(_client).TextField("Body").BuildAsync();
+        Guid draftId = await ContentItemApi.Create(_client, type, v => v.Set("Body", "v1 content"));
+
+        // Arrange
+        Guid firstPublishedId = await ContentItemApi.Publish(_client, draftId);
+
+        // Publish again (same draft can be published again)
+        Guid secondPublishedId = await ContentItemApi.Publish(_client, draftId);
+
+        // Act
+        ContentItemDto secondPublished = await ContentItemApi.Get(_client, secondPublishedId);
+
+        // Assert
+        Assert.Equal(2, secondPublished.Version);
+        Assert.Equal("Published", secondPublished.Status);
+
+        // Previous published version should be soft-deleted (not found)
+        HttpResponseMessage previousResponse = await _client.GetAsync(
+            $"{REQUEST_URI_CONTENT_ITEMS}/{firstPublishedId}"
+        );
+        Assert.Equal(HttpStatusCode.NotFound, previousResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task PublishContentItem_WhenAlreadyPublished_ReturnsConflict()
+    {
+        _client.AddAuthToken(await AuthenticationHelper.GetAdminAuthTokenAsync(_client));
+
+        ContentTypeDto type = await ContentTypeBuilder.Create(_client).TextField("Body").BuildAsync();
+        Guid draftId = await ContentItemApi.Create(_client, type, v => v.Set("Body", "content"));
+        Guid publishedId = await ContentItemApi.Publish(_client, draftId);
+
+        HttpResponseMessage response = await _client.PostAsJsonAsync(
+            $"{REQUEST_URI_CONTENT_ITEMS}/{publishedId}/publish",
+            new { }
+        );
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    #endregion
+
+    private record PublishedIdResponse(Guid Id);
+
     private record ContentTypeWithGuid(ContentTypeDto ContentTypeDto, Guid Id);
 
     private async Task<Guid> CreateContentType(CreateContentTypeCommand command)

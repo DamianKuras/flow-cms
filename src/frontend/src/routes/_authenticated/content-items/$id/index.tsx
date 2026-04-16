@@ -19,6 +19,7 @@ import {
   Pencil,
   Trash2,
   Calendar,
+  Send,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/content-items/$id/")({
@@ -66,10 +67,32 @@ function useDeleteContentItem() {
   });
 }
 
+function usePublishContentItem() {
+  const api = useApiClient();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
+  return useMutation({
+    mutationFn: async (draftId: string) => {
+      const response = await api.post<{ id: string }>(
+        `/content-items/${draftId}/publish`,
+        {}
+      );
+      return response.data.id;
+    },
+    onSuccess: (publishedId, draftId) => {
+      queryClient.invalidateQueries({ queryKey: ["content-item", draftId] });
+      queryClient.invalidateQueries({ queryKey: ["content"] });
+      navigate({ to: "/content-items/$id", params: { id: publishedId } });
+    },
+  });
+}
+
 function RouteComponent() {
   const { id } = Route.useParams();
   const { data: item, error, isLoading } = useContentItem(id);
   const deleteMutation = useDeleteContentItem();
+  const publishMutation = usePublishContentItem();
 
   const handleDelete = () => {
     if (
@@ -173,6 +196,16 @@ function RouteComponent() {
           </div>
 
           <div className="flex gap-2">
+            {item.status === "Draft" && (
+              <Button
+                size="sm"
+                onClick={() => publishMutation.mutate(id)}
+                disabled={publishMutation.isPending}
+              >
+                <Send className="mr-2 h-4 w-4" />
+                {publishMutation.isPending ? "Publishing..." : "Publish"}
+              </Button>
+            )}
             <Button variant="outline" size="sm" asChild>
               <Link to="/content-items/$id/edit" params={{ id }}>
                 <Pencil className="mr-2 h-4 w-4" />
@@ -190,6 +223,16 @@ function RouteComponent() {
             </Button>
           </div>
         </div>
+
+        {publishMutation.isError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Publish Failed</AlertTitle>
+            <AlertDescription>
+              {publishMutation.error?.message || "An unexpected error occurred."}
+            </AlertDescription>
+          </Alert>
+        )}
 
         {(item.createdAt || item.updatedAt) && (
           <div className="flex gap-6 text-sm text-muted-foreground">

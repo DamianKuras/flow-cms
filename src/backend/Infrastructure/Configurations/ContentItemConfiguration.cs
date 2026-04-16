@@ -42,6 +42,14 @@ internal class ContentItemConfiguration : IEntityTypeConfiguration<ContentItem>
                         )
             );
 
+        builder.Property(c => c.Version).HasColumnName("version").HasDefaultValue(0);
+
+        builder.Property(c => c.IsDeleted).HasColumnName("is_deleted").HasDefaultValue(false);
+
+        builder.Property(c => c.DeletedOnUtc).HasColumnName("deleted_on_utc");
+
+        builder.HasQueryFilter(c => !c.IsDeleted);
+
         builder
             .HasOne<ContentType>()
             .WithMany()

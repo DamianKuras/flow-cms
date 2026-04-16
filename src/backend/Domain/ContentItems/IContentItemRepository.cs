@@ -57,6 +57,29 @@ public interface IContentItemRepository
     Task<int> CountAsync(Guid contentTypeId, CancellationToken ct = default);
 
     /// <summary>
+    /// Retrieves the latest draft for a content item identified by title and content type.
+    /// </summary>
+    Task<ContentItem?> GetLatestDraftAsync(
+        string title,
+        Guid contentTypeId,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
+    /// Retrieves the latest published version for a content item identified by title and content type.
+    /// </summary>
+    Task<ContentItem?> GetLatestPublishedAsync(
+        string title,
+        Guid contentTypeId,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
+    /// Marks a content item as soft-deleted without removing it from the database.
+    /// </summary>
+    Task SoftDelete(ContentItem contentItem);
+
+    /// <summary>
     /// Persists all pending changes to the database.
     /// </summary>
     /// <param name="ct">Cancellation token for async operation.</param>

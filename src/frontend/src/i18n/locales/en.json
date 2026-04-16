@@ -1,11 +1,11 @@
 {
   "auth": {
     "title": "Sign In",
-    "usernameLabel": "Username",
+    "usernameLabel": "Email",
     "passwordLabel": "Password",
     "submit": "Sign In",
     "submitting": "Signing in...",
-    "invalidCredentials": "Invalid username or password"
+    "invalidCredentials": "Invalid email or password"
   },
   "contentType": {
     "create": {

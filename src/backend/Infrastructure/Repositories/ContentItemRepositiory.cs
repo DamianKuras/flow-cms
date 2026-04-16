@@ -47,6 +47,44 @@ public sealed class ContentItemRepository(AppDbContext db) : IContentItemReposit
     ) => await _db.ContentItems.FirstOrDefaultAsync(ci => ci.Id == id, cancellationToken);
 
     /// <inheritdoc/>
+    public async Task<ContentItem?> GetLatestDraftAsync(
+        string title,
+        Guid contentTypeId,
+        CancellationToken ct = default
+    ) =>
+        await _db
+            .ContentItems.Where(ci =>
+                ci.Title == title
+                && ci.ContentTypeId == contentTypeId
+                && ci.Status == ContentItemStatus.Draft
+            )
+            .OrderByDescending(ci => ci.Version)
+            .FirstOrDefaultAsync(ct);
+
+    /// <inheritdoc/>
+    public async Task<ContentItem?> GetLatestPublishedAsync(
+        string title,
+        Guid contentTypeId,
+        CancellationToken ct = default
+    ) =>
+        await _db
+            .ContentItems.Where(ci =>
+                ci.Title == title
+                && ci.ContentTypeId == contentTypeId
+                && ci.Status == ContentItemStatus.Published
+            )
+            .OrderByDescending(ci => ci.Version)
+            .FirstOrDefaultAsync(ct);
+
+    /// <inheritdoc/>
+    public Task SoftDelete(ContentItem contentItem)
+    {
+        contentItem.SoftDelete();
+        _db.ContentItems.Update(contentItem);
+        return Task.CompletedTask;
+    }
+
+    /// <inheritdoc/>
     public async Task SaveChangesAsync(CancellationToken ct = default) =>
         await _db.SaveChangesAsync(ct);
 

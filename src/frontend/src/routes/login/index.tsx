@@ -34,7 +34,7 @@ function LoginComponent() {
   const { auth } = Route.useRouteContext();
   const { redirect } = Route.useSearch();
   const navigate = useNavigate();
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -45,7 +45,7 @@ function LoginComponent() {
     setError("");
 
     try {
-      await auth.login(username, password);
+      await auth.login(email, password);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       navigate({ to: redirect } as any);
     } catch {
@@ -70,13 +70,13 @@ function LoginComponent() {
             )}
 
             <div className="space-y-1">
-              <Label htmlFor="username">{t("auth.usernameLabel")}</Label>
+              <Label htmlFor="email">{t("auth.usernameLabel")}</Label>
               <Input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoComplete="username"
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
                 required
               />
             </div>

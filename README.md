@@ -10,191 +10,186 @@ This project is **actively under development**. The API structure, endpoints, an
 
 ## Prerequisites
 
-- .NET 9.0 SDK or later
-- PostgreSQL
-- **Docker Desktop** (Required only for Integration Tests via Testcontainers)
-
-## Setup
-
-1. **Clone the Repository:**
-   ```bash
-   git clone https://github.com/DamianKuras/flow-cms.git
-   cd flow-cms
-   ```
-
-### Backend
-
-1. **Configure local settings:**
-
-   `appsettings.Development.json` ships with working local defaults including seed credentials. For production, override the `Seed` section via environment variables:
-
-   | Environment variable | Description |
-   |---|---|
-   | `Seed__AdminEmail` | Admin account email |
-   | `Seed__AdminPassword` | Admin account password |
-   | `Seed__DevUserPassword` | Dev user password (Development only) |
-   | `Seed__DevUserCount` | Number of dev users to seed (Development only) |
-
-1. **Create migration:**
-
-```bash
-dotnet ef migrations add Initial --project ./src/backend/Infrastructure --startup-project ./src/backend/Api
-
-```
-
-1. **Update Database:**
-
-```bash
-dotnet ef database update --project ./src/backend/Infrastructure --startup-project ./src/backend/Api
-```
-
-2. **Run Api:**
-
-```bash
-dotnet run --project ./src/backend/Api
-```
-
-### Frontend
-
-1. **Install dependencies:**
-
-   ```bash
-   cd src/frontend
-   npm install
-   ```
-
-2. **Start dev server:**
-
-   ```bash
-   npm run dev
-   ```
-
-### Frontend Tests
-
-Frontend tests use [Vitest](https://vitest.dev/) with [Testing Library](https://testing-library.com/).
-
-1. **Run all tests once:**
-
-   ```bash
-   cd src/frontend
-   npm test
-   ```
-
-Tests live in `src/frontend/tests/`, mirroring the source structure (e.g. `tests/rules/validation/min-length-rule.test.tsx` tests `src/rules/validation/min-length-rule.tsx`).
+- .NET 10.0 SDK
+- Node.js / npm
+- Docker Desktop
 
 ---
 
-### Backend Tests
+## Running with Docker
 
-This project contains both **Unit Tests** and **Integration Tests**.
+The easiest way to run the full stack locally:
 
-#### ⚠️ Integration Tests Requirement
+```bash
+cp .env.example .env   # fill in your values
+docker compose up --build
+```
 
-The **Integration.Tests** project uses **Testcontainers**. You must have **Docker** installed and running to execute these tests, as they spin up a real PostgreSQL container dynamically.
+| Service  | URL                   |
+| -------- | --------------------- |
+| Frontend | http://localhost:5173 |
+| Backend  | http://localhost:5043 |
 
-1. **Run All Tests (Requires Docker)**
+Default seed credentials (from `src/backend/Api/appsettings.Development.json`):
+
+| Email             | Password    |
+| ----------------- | ----------- |
+| `admin@admin.com` | `Admin@123` |
+
+To override seed credentials, set environment variables in `.env`:
+
+| Variable                | Description                                    |
+| ----------------------- | ---------------------------------------------- |
+| `Seed__AdminEmail`      | Admin account email                            |
+| `Seed__AdminPassword`   | Admin account password                         |
+| `Seed__DevUserPassword` | Dev user password (Development only)           |
+| `Seed__DevUserCount`    | Number of dev users to seed (Development only) |
+
+---
+
+## Local Development (without Docker)
+
+### Backend
+
+1. **Configure local settings** — `appsettings.Development.json` ships with working defaults.
+
+2. **Run migrations:**
 
    ```bash
-   dotnet test
+   dotnet ef database update --project ./src/backend/Infrastructure --startup-project ./src/backend/Api
    ```
 
-2. **Run Tests Without Docker (Unit Tests Only)**
-   If you do not have Docker running, you can run specific unit test for projects individually for example domain tests:
+3. **Start the API:**
 
    ```bash
-   dotnet test ./tests/Domain.Tests
+   dotnet run --project ./src/backend/Api
    ```
 
-   or Application tests:
+### Frontend
 
-   ```bash
-   dotnet test ./tests/Application.Tests
-   ```
+```bash
+cd src/frontend
+npm install
+npm run dev
+```
 
-### Code Coverage
+---
 
-Generates a merged HTML coverage report from Domain, Application, and Integration tests.
+## Tests
 
-#### Prerequisites — one-time install
+### Unit tests (no Docker required)
+
+```bash
+dotnet test ./tests/Domain.Tests
+dotnet test ./tests/Application.Tests
+```
+
+### Integration tests (requires Docker)
+
+Uses Testcontainers to spin up a real PostgreSQL container.
+
+```bash
+dotnet test ./tests/Integration.Tests
+```
+
+### E2E tests (requires Docker)
+
+Full-stack browser tests: Playwright drives a headless Chromium browser against the full stack running in Docker Compose.
+
+#### Option A — fully in Docker (no local setup needed)
+
+```bash
+docker compose -f docker-compose.e2e.yml run --build --rm tests
+```
+
+Starts db + backend + frontend, then runs a `tests` container built from the official Playwright .NET image (browsers pre-installed). No separate browser install step.
+
+#### Option B — local test runner
+
+Requires Playwright browser binaries installed once:
+
+```bash
+dotnet build tests/E2E.Tests
+powershell tests\E2E.Tests\bin\Debug\net10.0\playwright.ps1 install chromium
+```
+
+Then:
+
+```bash
+dotnet test ./tests/E2E.Tests
+```
+
+The fixture automatically starts the Docker Compose stack, waits for readiness, runs tests, and tears down on completion.
+
+To watch the browser during local test runs, set `Headless = false` in `E2ECollectionFixture.cs`.
+
+### Frontend tests (Vitest)
+
+```bash
+cd src/frontend
+npm test
+```
+
+### Code coverage
+
+One-time install:
 
 ```bash
 dotnet tool install -g dotnet-reportgenerator-globaltool
 ```
 
-#### Run
+Generate report:
 
 ```bat
 test_with_coverage.bat
 ```
 
-The report opens automatically in your browser. Coverage is scoped to `Domain`, `Application`, `Infrastructure`, and `Api` assemblies — EF migrations and auto-generated OpenAPI code are excluded.
+---
 
-> **Note:** E2E tests are excluded from coverage collection because they start the API as a separate process, which cannot be instrumented.
+## Content lifecycle
+
+### Content types
+
+A content type defines the schema (fields) that content items must conform to. Content types are versioned and move through the following states:
+
+```
+DRAFT → PUBLISHED → ARCHIVED
+```
+
+- **DRAFT** — the working schema. Editable. Not yet visible to consumers.
+- **PUBLISHED** — the active schema. Publishing a draft creates a **new row** with an incremented version number. The previous published version is archived automatically.
+- **ARCHIVED** — a retired version. Read-only, kept for historical reference.
+
+Only one published version of a content type exists at a time. The `name` field is the stable identifier across all versions.
+
+### Content items
+
+A content item is a data record that conforms to a specific content type's schema. Content items follow the same versioning model:
+
+```
+Draft → Published
+         ↑
+   (previous published archived)
+```
+
+- **Draft** — the working copy. Editable. Not served to consumers.
+- **Published** — the live version. Publishing a draft creates a **new row** with an incremented version. The previous published version is soft-deleted.
+
+The `title` + `contentTypeId` pair is the stable identifier across versions. After publishing, the draft remains and can be edited to produce a future version.
+
+### Publish flow (content items)
+
+1. Create or edit a content item draft.
+2. `POST /content-items/{draftId}/publish`
+3. A new published row is created (new ID, `Version = prev + 1`).
+4. The previous published version (if any) is soft-deleted.
+5. The draft is preserved.
+6. The response returns the ID of the new published item.
 
 ---
 
-### E2E Tests (Playwright .NET)
+## Plugin system
 
-The `E2E.Tests` project runs full-stack browser tests: a real Chromium browser talks to the React frontend, which talks to an ASP.NET Core API backed by a PostgreSQL Testcontainers database — all started automatically by the test runner.
+Validation and transformation rules can be shipped as separate .NET assemblies. At startup, the API scans the `plugins/` folder for `.dll` files and registers any types implementing `IValidationRule` or `ITransformationRule`.
 
-#### ⚠️ Requirements
-
-- **Docker** — for the PostgreSQL Testcontainers database
-- **Node.js / npm** — to start the Vite dev server
-- **Playwright browsers** — one-time install (see below)
-
-#### One-time: install Playwright browser binaries
-
-After building the project, run:
-
-```bash
-dotnet build tests/E2E.Tests
-```
-
-Then install the browser binaries. Use whichever PowerShell is available:
-
-```powershell
-# Windows PowerShell (built-in)
-powershell tests\E2E.Tests\bin\Debug\net10.0\playwright.ps1 install chromium
-
-# PowerShell Core
-pwsh tests/E2E.Tests/bin/Debug/net10.0/playwright.ps1 install chromium
-```
-
-#### Run E2E tests
-
-```bash
-dotnet test tests/E2E.Tests
-```
-
-The test fixture automatically:
-
-1. Starts a PostgreSQL container and runs migrations
-2. Starts the ASP.NET Core API on `http://localhost:5252`
-3. Starts the Vite frontend on `http://localhost:5173` (using `.env.e2e` so `VITE_CMS_API_URL` points to the test API)
-4. Launches a headless Chromium browser
-
-#### Run E2E tests headed (visible browser)
-
-To watch the browser during a test run, change `Headless = true` to `Headless = false` in `E2ECollectionFixture.cs`.
-
----
-
-## Validation Rules and Transformation Rules Plugin Guide
-
-This project supports **validation rule plugins** and **transformation rule plugins** implemented as separate .NET assemblies.  
-Plugins are discovered and loaded at runtime by scanning a plugins folder for `.dll` files and reflecting on types that implement `IValidationRule` or `ITransformationRule`.
-
----
-
-## How Plugin Loading Works
-
-At startup, the host application:
-
-1. Loads all `.dll` files from a configured `plugins` folder.
-2. Scans each assembly for types implementing `IValidationRule` or `ITransformationRule`.
-3. Registers them into the validation rule registry.
-4. Makes them available for validation logic in your app.
-
-Example plugin folder is located under /src/backend/ExamplePlugin
-you can build this project and then move PluginExample.dll to the /plugins folder in your compiled cms app.
+An example plugin lives at `src/backend/ExamplePlugin`. Build it and copy the `.dll` to the `plugins/` folder next to the compiled API.

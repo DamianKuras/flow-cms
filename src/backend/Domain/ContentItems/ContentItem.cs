@@ -1,68 +1,59 @@
 using Domain.Common;
 using Domain.ContentTypes;
 using Domain.Fields;
-// using Domain.Fields.Transformers;
 using Domain.Fields.Validations;
 
 namespace Domain.ContentItems;
 
+public sealed class CannotPublishContentItemException(string message) : Exception(message);
+
 /// <summary>
 /// Represents a content item that manages a collection of field values based on a specific content type definition.
 /// </summary>
-public class ContentItem
+public class ContentItem : ISoftDeletable
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="ContentItem"/> class.
+    /// Required by EF Core. Do not use directly.
     /// </summary>
     public ContentItem() { }
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ContentItem"/> class with the specified values.
-    /// </summary>
-    /// <param name="id">The unique identifier for the content item.</param>
-    /// <param name="title">The title of the content item. Cannot be null or empty.</param>
-    /// <param name="contentTypeId">The unique identifier of the content type this item belongs to.</param>
-    /// <remarks>
-    /// The content item is created with a default status of <see cref="ContentItemStatus.Draft"/>.
-    /// Field values should be set using the content item field service after construction.
-    /// </remarks>
-    public ContentItem(Guid id, string title, Guid contentTypeId)
+    /// <param name="id">Unique identifier.</param>
+    /// <param name="title">Title of the content item. Cannot be null or empty.</param>
+    /// <param name="contentTypeId">The content type this item belongs to.</param>
+    /// <param name="version">Version number. Defaults to 0 for new drafts.</param>
+    /// <param name="status">Publication status. Defaults to Draft.</param>
+    public ContentItem(
+        Guid id,
+        string title,
+        Guid contentTypeId,
+        int version = 0,
+        ContentItemStatus status = ContentItemStatus.Draft
+    )
     {
         Id = id;
         Title = title;
         ContentTypeId = contentTypeId;
+        Version = version;
+        Status = status;
     }
 
-    /// <summary>
-    /// Gets the unique identifier for this content item.
-    /// </summary>
     public Guid Id { get; }
-
-    /// <summary>
-    /// Gets the title of the content item.
-    /// </summary>
     public string Title { get; } = "";
-
-    /// <summary>
-    /// Gets the unique identifier of the content type this item is based on.
-    /// </summary>
-    /// <value>A <see cref="Guid"/> referencing the associated <see cref="ContentType"/>.</value>
     public Guid ContentTypeId { get; private set; }
+    public ContentItemStatus Status { get; private set; } = ContentItemStatus.Draft;
+    public int Version { get; }
 
-    /// <summary>
-    /// Gets the current status of the content item.
-    /// </summary>
-    /// <value>The status of the content item, defaulting to <see cref="ContentItemStatus.Draft"/>.</value>
-    public ContentItemStatus Status { get; } = ContentItemStatus.Draft;
+    public bool IsDeleted { get; private set; }
+    public DateTime? DeletedOnUtc { get; private set; }
+
+    public void SoftDelete()
+    {
+        IsDeleted = true;
+        DeletedOnUtc = DateTime.UtcNow;
+    }
 
     private readonly Dictionary<Guid, ContentFieldValue> _values = [];
 
-    /// <summary>
-    /// Gets a read-only dictionary of field values keyed by field ID.
-    /// </summary>
-    /// <value>
-    /// A read-only dictionary where keys are field IDs and values are <see cref="ContentFieldValue"/> instances.
-    /// </value>
     public IReadOnlyDictionary<Guid, ContentFieldValue> Values => _values.AsReadOnly();
 
     internal void SetInternalFieldValue(Guid fieldId, object? value)
@@ -75,6 +66,41 @@ public class ContentItem
         {
             _values[fieldId] = new ContentFieldValue(value);
         }
+    }
+
+    /// <summary>
+    /// Creates a new published version of this content item.
+    /// The draft is unchanged; the returned instance is the new published row.
+    /// </summary>
+    /// <param name="previousPublished">
+    /// The currently published version, if any. Used to determine the next version number.
+    /// Will be soft-deleted by the caller after this method returns.
+    /// </param>
+    public ContentItem PublishFrom(ContentItem? previousPublished)
+    {
+        if (Status != ContentItemStatus.Draft)
+        {
+            throw new CannotPublishContentItemException(
+                $"Only drafts can be published. Current status: {Status}."
+            );
+        }
+
+        int nextVersion = (previousPublished?.Version ?? 0) + 1;
+
+        ContentItem published = new(
+            id: Guid.NewGuid(),
+            title: Title,
+            contentTypeId: ContentTypeId,
+            version: nextVersion,
+            status: ContentItemStatus.Published
+        );
+
+        foreach (KeyValuePair<Guid, ContentFieldValue> kv in _values)
+        {
+            published.SetInternalFieldValue(kv.Key, kv.Value.Value);
+        }
+
+        return published;
     }
 }
 

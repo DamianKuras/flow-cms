@@ -80,10 +80,9 @@ public class IntegrationTestWebApplicationFactory : WebApplicationFactory<Progra
         using IServiceScope scope = Services.CreateScope();
         AppDbContext dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        // Delete all data
-        // await dbContext.ValidationRuleParameters.ExecuteDeleteAsync();
+        // IgnoreQueryFilters ensures soft-deleted rows are included in the delete
         await dbContext.Fields.ExecuteDeleteAsync();
-        await dbContext.ContentItems.ExecuteDeleteAsync();
+        await dbContext.ContentItems.IgnoreQueryFilters().ExecuteDeleteAsync();
         await dbContext.ContentTypes.ExecuteDeleteAsync();
         await dbContext.SaveChangesAsync();
     }
