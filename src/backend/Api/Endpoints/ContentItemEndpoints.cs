@@ -52,7 +52,7 @@ public static class ContentItemEndpoints
             .MapPatch("/{id}", UpdateContentItem)
             .WithName("UpdateContentItem")
             .RequireAuthorization()
-            .Produces<ContentItemDto>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status404NotFound)
             .Produces(StatusCodes.Status401Unauthorized);
@@ -129,13 +129,25 @@ public static class ContentItemEndpoints
 
     private static async Task<IResult> UpdateContentItem(
         [FromRoute] Guid id,
-        UpdateContentItemCommand command,
+        [FromBody] UpdateContentItemDto dto,
         ICommandHandler<UpdateContentItemCommand, Guid> handler,
         CancellationToken cancellationToken
     )
     {
+        var values = new Dictionary<Guid, object?>();
+        if (dto.Values is not null)
+        {
+            foreach (KeyValuePair<string, JsonElement?> kv in dto.Values)
+            {
+                if (kv.Value is not null)
+                {
+                    values.Add(Guid.Parse(kv.Key), JsonTypeConverter.Convert(kv.Value));
+                }
+            }
+        }
+        var command = new UpdateContentItemCommand(id, values);
         Result<Guid> result = await handler.Handle(command, cancellationToken);
-        return result.Match(onSuccess: _ => Results.Ok());
+        return result.Match(onSuccess: _ => Results.NoContent());
     }
 
     private static async Task<IResult> PublishContentItem(
@@ -146,7 +158,7 @@ public static class ContentItemEndpoints
     {
         var command = new PublishContentItemCommand(id);
         Result<Guid> result = await handler.Handle(command, cancellationToken);
-        return result.Match(onSuccess: _ => Results.Ok());
+        return result.Match(onSuccess: publishedId => Results.Ok(new { id = publishedId }));
     }
 
     private static async Task<IResult> DeleteContentItem(

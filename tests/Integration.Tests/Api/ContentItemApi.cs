@@ -26,6 +26,20 @@ public static class ContentItemApi
     public static async Task<ContentItemDto> Get(HttpClient client, Guid id) =>
         await client.GetAsync($"/content-items/{id}").Result.ReadJsonAsync<ContentItemDto>();
 
+    public static async Task<HttpResponseMessage> Update(
+        HttpClient client,
+        Guid itemId,
+        ContentTypeDto type,
+        Action<ContentItemValuesBuilder> values
+    )
+    {
+        var builder = new ContentItemValuesBuilder(type);
+        values(builder);
+
+        var body = new { values = builder.Build().ToDictionary(kv => kv.Key.ToString(), kv => kv.Value) };
+        return await client.PatchAsJsonAsync($"/content-items/{itemId}", body);
+    }
+
     public static async Task<Guid> Publish(HttpClient client, Guid draftId)
     {
         HttpResponseMessage response = await client.PostAsJsonAsync(

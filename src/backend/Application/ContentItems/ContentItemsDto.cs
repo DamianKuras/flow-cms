@@ -11,6 +11,7 @@ public record ContentItemDto(
     string Name,
     Guid ContentTypeId,
     string Status,
+    int Version,
     Dictionary<string, ContentFieldValueDto> Values
 );
 
@@ -36,17 +37,4 @@ public record CreateContentItemDto(
 /// <summary>
 /// Update content item request DTO.
 /// </summary>
-public record UpdateContentItemDto(
-    string? Name,
-    ContentItemStatus? Status,
-    Dictionary<Guid, object?>? Values
-);
-
-/// <summary>
-/// Patch content item request DTO.
-/// </summary>
-public record PatchContentItemDto(
-    string? Name,
-    ContentItemStatus? Status,
-    Dictionary<Guid, object?>? Values
-);
+public record UpdateContentItemDto(Dictionary<string, JsonElement?>? Values);

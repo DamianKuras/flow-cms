@@ -264,6 +264,119 @@ public class ContentItemEndpointsTests
         Assert.NotEqual(Guid.Empty, item.Id);
     }
 
+    #region PATCH /content-items/{id}
+
+    [Fact]
+    public async Task UpdateContentItem_WithValidValues_ReturnsNoContent()
+    {
+        _client.AddAuthToken(await AuthenticationHelper.GetAdminAuthTokenAsync(_client));
+
+        ContentTypeDto type = await ContentTypeBuilder
+            .Create(_client)
+            .TextField("Title")
+            .BuildAsync();
+
+        Guid itemId = await ContentItemApi.Create(_client, type, v => v.Set("Title", "Original"));
+
+        HttpResponseMessage response = await ContentItemApi.Update(
+            _client,
+            itemId,
+            type,
+            v => v.Set("Title", "Updated")
+        );
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+
+        ContentItemDto item = await ContentItemApi.Get(_client, itemId);
+        Assert.Equal("Updated", item.Values["Title"].Value.GetString());
+    }
+
+    [Fact]
+    public async Task UpdateContentItem_WithNonExistentId_ReturnsNotFound()
+    {
+        _client.AddAuthToken(await AuthenticationHelper.GetAdminAuthTokenAsync(_client));
+
+        HttpResponseMessage response = await _client.PatchAsJsonAsync(
+            $"{REQUEST_URI_CONTENT_ITEMS}/{Guid.NewGuid()}",
+            new { values = new Dictionary<string, object?>() }
+        );
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateContentItem_OnPublishedItem_ReturnsConflict()
+    {
+        _client.AddAuthToken(await AuthenticationHelper.GetAdminAuthTokenAsync(_client));
+
+        ContentTypeDto type = await ContentTypeBuilder
+            .Create(_client)
+            .TextField("Title")
+            .BuildAsync();
+
+        Guid draftId = await ContentItemApi.Create(_client, type, v => v.Set("Title", "Draft"));
+        Guid publishedId = await ContentItemApi.Publish(_client, draftId);
+
+        HttpResponseMessage response = await ContentItemApi.Update(
+            _client,
+            publishedId,
+            type,
+            v => v.Set("Title", "Attempt")
+        );
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateContentItem_WithUnknownFieldId_ReturnsConflict()
+    {
+        _client.AddAuthToken(await AuthenticationHelper.GetAdminAuthTokenAsync(_client));
+
+        ContentTypeDto type = await ContentTypeBuilder
+            .Create(_client)
+            .TextField("Title")
+            .BuildAsync();
+
+        Guid itemId = await ContentItemApi.Create(_client, type, v => v.Set("Title", "Original"));
+
+        HttpResponseMessage response = await _client.PatchAsJsonAsync(
+            $"{REQUEST_URI_CONTENT_ITEMS}/{itemId}",
+            new { values = new Dictionary<string, object?> { [Guid.NewGuid().ToString()] = "value" } }
+        );
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateContentItem_WithFieldValidationFailure_ReturnsBadRequest()
+    {
+        _client.AddAuthToken(await AuthenticationHelper.GetAdminAuthTokenAsync(_client));
+
+        ContentTypeDto type = await ContentTypeBuilder
+            .Create(_client)
+            .TextField(
+                "Title",
+                f => f.WithValidationRule(
+                    "MaximumLengthValidationRule",
+                    new Dictionary<string, object> { ["max-length"] = 5 }
+                )
+            )
+            .BuildAsync();
+
+        Guid itemId = await ContentItemApi.Create(_client, type, v => v.Set("Title", "Hi"));
+
+        HttpResponseMessage response = await ContentItemApi.Update(
+            _client,
+            itemId,
+            type,
+            v => v.Set("Title", "This exceeds the max length of five")
+        );
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    #endregion
+
     #region POST /content-items/{id}/publish
 
     [Fact]

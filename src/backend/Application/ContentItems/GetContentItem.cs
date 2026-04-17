@@ -122,6 +122,7 @@ public sealed class GetContentItemByIdHandler(
             contentItem.Title,
             contentItem.ContentTypeId,
             contentItem.Status.ToString(),
+            contentItem.Version,
             valuesDto
         );
 
