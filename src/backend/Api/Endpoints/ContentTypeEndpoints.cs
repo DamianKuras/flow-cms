@@ -9,15 +9,11 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Endpoints;
 
-/// <summary>
-/// Defines HTTP endpoints for managing content types in the CMS.
-/// </summary>
+public record PublishContentTypeRequest(MigrationMode MigrationMode = MigrationMode.Lazy);
+
+/// <summary>HTTP endpoints for managing content types.</summary>
 public static class ContentTypeEndpoints
 {
-    /// <summary>
-    /// Registers all content type-related endpoints with the application's routing configuration.
-    /// </summary>
-    /// <param name="endpoints">The endpoint route builder to register routes with.</param>
     public static void RegisterContentTypeEndpoints(this IEndpointRouteBuilder endpoints)
     {
         IEndpointRouteBuilder group = endpoints.MapGroup("/content-types").WithTags("Content Type");
@@ -46,6 +42,15 @@ public static class ContentTypeEndpoints
             .Produces(StatusCodes.Status404NotFound);
 
         group
+            .MapPut("/{id}/draft", UpdateDraftContentType)
+            .WithName("UpdateDraftContentType")
+            .RequireAuthorization()
+            .Produces<Guid>(StatusCodes.Status200OK)
+            .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status404NotFound);
+
+        group
             .MapDelete("/{id}", DeleteContentType)
             .WithName("DeleteContentType")
             .RequireAuthorization()
@@ -62,12 +67,44 @@ public static class ContentTypeEndpoints
             .Produces(StatusCodes.Status404NotFound);
 
         group
+            .MapGet("/summaries", GetContentTypeSummaries)
+            .WithName("GetContentTypeSummaries")
+            .RequireAuthorization()
+            .Produces<IReadOnlyList<ContentTypeSummaryDto>>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized);
+
+        group
             .MapPost("{contentTypeName}/publish", PublishContentType)
             .WithName("PublishContentType")
             .RequireAuthorization()
-            .Produces(StatusCodes.Status204NoContent)
+            .Produces<object>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status401Unauthorized)
             .Produces(StatusCodes.Status404NotFound);
+
+        group
+            .MapGet("/{contentTypeName}/migration-jobs", GetMigrationJobs)
+            .WithName("GetMigrationJobs")
+            .RequireAuthorization()
+            .Produces<IReadOnlyList<MigrationJobDto>>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized);
+
+        group
+            .MapGet("/migration-jobs/{id}", GetMigrationJob)
+            .WithName("GetMigrationJob")
+            .RequireAuthorization()
+            .Produces<MigrationJobDto>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .Produces(StatusCodes.Status404NotFound);
+    }
+
+    private static async Task<IResult> GetContentTypeSummaries(
+        [FromServices] IQueryHandler<GetContentTypeSummariesQuery, IReadOnlyList<ContentTypeSummaryDto>> handler,
+        CancellationToken cancellationToken
+    )
+    {
+        var query = new GetContentTypeSummariesQuery();
+        Result<IReadOnlyList<ContentTypeSummaryDto>> result = await handler.Handle(query, cancellationToken);
+        return result.Match(onSuccess: summaries => Results.Ok(summaries));
     }
 
     private static async Task<IResult> GetContentTypes(
@@ -115,6 +152,19 @@ public static class ContentTypeEndpoints
         return result.Match(onSuccess: schemas => Results.Ok(schemas));
     }
 
+    private static async Task<IResult> UpdateDraftContentType(
+        [FromRoute] Guid id,
+        [FromBody] UpdateDraftContentTypeCommand command,
+        [FromServices] ICommandHandler<UpdateDraftContentTypeCommand, Guid> handler,
+        CancellationToken cancellationToken
+    )
+    {
+        // Route id overrides any id in the body to prevent mismatch.
+        var actualCommand = command with { Id = id };
+        Result<Guid> result = await handler.Handle(actualCommand, cancellationToken);
+        return result.Match(onSuccess: updatedId => Results.Ok(new { Id = updatedId }));
+    }
+
     private static async Task<IResult> DeleteContentType(
         [FromRoute] Guid id,
         [FromServices] ICommandHandler<DeleteContentTypeCommand, Guid> handler,
@@ -139,12 +189,38 @@ public static class ContentTypeEndpoints
 
     private static async Task<IResult> PublishContentType(
         [FromRoute] string contentTypeName,
+        [FromBody] PublishContentTypeRequest? body,
         [FromServices] ICommandHandler<PublishContentTypeCommand, Guid> handler,
         CancellationToken cancellationToken
     )
     {
-        var command = new PublishContentTypeCommand(contentTypeName);
+        var command = new PublishContentTypeCommand(
+            contentTypeName,
+            body?.MigrationMode ?? MigrationMode.Lazy
+        );
         Result<Guid> result = await handler.Handle(command, cancellationToken);
-        return result.Match(onSuccess: guid => Results.NoContent());
+        return result.Match(onSuccess: guid => Results.Ok(new { id = guid }));
+    }
+
+    private static async Task<IResult> GetMigrationJobs(
+        [FromRoute] string contentTypeName,
+        [FromServices] IQueryHandler<GetMigrationJobsQuery, IReadOnlyList<MigrationJobDto>> handler,
+        CancellationToken cancellationToken
+    )
+    {
+        var query = new GetMigrationJobsQuery(contentTypeName);
+        Result<IReadOnlyList<MigrationJobDto>> result = await handler.Handle(query, cancellationToken);
+        return result.Match(onSuccess: jobs => Results.Ok(jobs));
+    }
+
+    private static async Task<IResult> GetMigrationJob(
+        [FromRoute] Guid id,
+        [FromServices] IQueryHandler<GetMigrationJobQuery, MigrationJobDto> handler,
+        CancellationToken cancellationToken
+    )
+    {
+        var query = new GetMigrationJobQuery(id);
+        Result<MigrationJobDto> result = await handler.Handle(query, cancellationToken);
+        return result.Match(onSuccess: job => Results.Ok(job));
     }
 }
