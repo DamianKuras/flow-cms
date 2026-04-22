@@ -1,3 +1,4 @@
+using Domain;
 using Domain.ContentItems;
 using Domain.Fields;
 using Domain.Users;
@@ -43,6 +44,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     /// <summary>Refresh tokens issued during authentication.</summary>
     public DbSet<RefreshToken> RefreshTokens { get; set; }
+
+    /// <summary>Schema migration jobs between published content type versions.</summary>
+    public DbSet<MigrationJob> MigrationJobs { get; set; }
 
     /// <summary>Permission rules assigned to roles.</summary>
     public DbSet<RolePermissionEntity> RolePermissions => Set<RolePermissionEntity>();

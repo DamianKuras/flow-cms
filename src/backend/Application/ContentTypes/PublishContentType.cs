@@ -1,5 +1,7 @@
 using Application.Interfaces;
+using Domain;
 using Domain.Common;
+using Domain.ContentItems;
 using Domain.ContentTypes;
 using Domain.Permissions;
 using Microsoft.Extensions.Logging;
@@ -7,33 +9,24 @@ using Microsoft.Extensions.Logging;
 namespace Application.ContentTypes;
 
 /// <summary>
-/// Command to publish a content type from draft to published status.
+/// Publishes a draft content type by name.
+/// <paramref name="MigrationMode"/> is ignored when there is no previous published version.
 /// </summary>
-/// <param name="ContentTypeName">The unique name of the content type to publish.</param>
-public sealed record PublishContentTypeCommand(string ContentTypeName);
+public sealed record PublishContentTypeCommand(
+    string ContentTypeName,
+    MigrationMode MigrationMode = MigrationMode.Lazy
+);
 
-/// <summary>
-/// Handles the publication of a content type by transitioning the latest draft version
-/// to published status, managing versioning, and archiving previous publications.
-/// </summary>
-/// <param name="contentTypeRepository">Repository for content type persistence operations.</param>
-/// <param name="authorizationService">Authorization service for checking if user is allowed to perform this action.</param>
-/// <param name="logger">Logger instance for structured logging.</param>
+/// <summary>Transitions the latest draft to published, archives the previous publication, and creates a migration job when needed.</summary>
 public sealed class PublishContentTypeCommandHandler(
     IContentTypeRepository contentTypeRepository,
+    IContentItemRepository contentItemRepository,
+    IMigrationJobRepository migrationJobRepository,
     IAuthorizationService authorizationService,
+    IUserContext userContext,
     ILogger<PublishContentTypeCommandHandler> logger
 ) : ICommandHandler<PublishContentTypeCommand, Guid>
 {
-    /// <summary>
-    /// Executes the publish content type command.
-    /// </summary>
-    /// <param name="command">The command containing the content type name to publish.</param>
-    /// <param name="cancellationToken">Cancellation token to observe.</param>
-    /// <returns>
-    /// A <see cref="Result{T}"/> containing the ID of the newly published content type on success,
-    /// or an error if the operation fails.
-    /// </returns>
     public async Task<Result<Guid>> Handle(
         PublishContentTypeCommand command,
         CancellationToken cancellationToken
@@ -63,7 +56,7 @@ public sealed class PublishContentTypeCommandHandler(
 
         bool allowed = await authorizationService.IsAllowedAsync(
             CmsAction.Publish,
-            new ContentTypeResource(draft.Id),
+            new ContentTypeResource(draft.Name),
             cancellationToken
         );
 
@@ -132,6 +125,35 @@ public sealed class PublishContentTypeCommandHandler(
 
         await contentTypeRepository.AddAsync(publishedContentType, cancellationToken);
         await contentTypeRepository.SaveChangesAsync(cancellationToken);
+
+        // When upgrading an existing published schema, create a migration job so that
+        // items still pointing at the old schema row can be updated.
+        if (previousPublication is not null)
+        {
+            int itemCount = await contentItemRepository.CountAsync(
+                previousPublication.Id,
+                cancellationToken
+            );
+            if (itemCount > 0)
+            {
+                string author = userContext.IsAuthenticated ? userContext.UserId.ToString() : "system";
+                var job = new MigrationJob(
+                    id: Guid.NewGuid(),
+                    fromSchemaId: previousPublication.Id,
+                    toSchemaId: publishedContentType.Id,
+                    mode: command.MigrationMode,
+                    createdBy: author,
+                    totalItemsCount: itemCount
+                );
+                await migrationJobRepository.AddAsync(job, cancellationToken);
+                await migrationJobRepository.SaveChangesAsync(cancellationToken);
+
+                logger.LogInformation(
+                    "Created {Mode} migration job {JobId} for {Count} items ({From} → {To})",
+                    command.MigrationMode, job.Id, itemCount, previousPublication.Id, publishedContentType.Id
+                );
+            }
+        }
 
         logger.LogInformation(
             "Successfully published content type '{ContentTypeName}' with ID {PublishedId} and version {Version}",

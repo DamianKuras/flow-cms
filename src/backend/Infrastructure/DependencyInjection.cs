@@ -5,6 +5,7 @@ using Domain.Fields.Transformers;
 using Domain.Fields.Validations;
 using Domain.Roles;
 using Domain.Users;
+using Infrastructure.BackgroundServices;
 using Infrastructure.Data;
 using Infrastructure.Extensions;
 using Infrastructure.Fields;
@@ -20,17 +21,9 @@ using Npgsql;
 
 namespace Infrastructure;
 
-/// <summary>
-/// Provides extension methods for registering infrastructure-layer services in the dependency injection container.
-/// </summary>
+/// <summary>Registers infrastructure-layer services: database, identity, repositories, and plugins.</summary>
 public static class ServiceRegistration
 {
-    /// <summary>
-    /// Configures and registers infrastructure-layer services such as the database context, identity, repositories, and plugins.
-    /// </summary>
-    /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
-    /// <param name="configuration">The application configuration for accessing settings like connection strings.</param>
-    /// <returns>The original <see cref="IServiceCollection"/> for chaining.</returns>
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
         IConfiguration configuration
@@ -62,6 +55,8 @@ public static class ServiceRegistration
 
         services.AddScoped<IContentTypeRepository, ContentTypeRepository>();
         services.AddScoped<IContentItemRepository, ContentItemRepository>();
+        services.AddScoped<IMigrationJobRepository, MigrationJobRepository>();
+        services.AddHostedService<EagerMigrationBackgroundService>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();

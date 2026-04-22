@@ -1158,6 +1158,66 @@ public class ContentTypeEndpointsTests
     #region GET /{name}/migration-jobs
 
     [Fact]
+    public async Task Publish_WithNoExistingItems_DoesNotCreateMigrationJob()
+    {
+        // Arrange
+        string token = await AuthenticationHelper.GetAdminAuthTokenAsync(_client);
+        _client.AddAuthToken(token);
+
+        // Publish v1 (no items exist yet)
+        await ContentTypeBuilder.Create(_client).TextField("Title").BuildAsync("NoItems");
+        await _client.PostAsJsonAsync($"{REQUEST_URI}/NoItems/publish", new { MigrationMode = "Eager" });
+
+        // Create and publish v2
+        await ContentTypeBuilder.Create(_client).TextField("Title").TextField("Body").BuildAsync("NoItems");
+
+        // Act
+        await _client.PostAsJsonAsync($"{REQUEST_URI}/NoItems/publish", new { MigrationMode = "Eager" });
+
+        // Assert — no migration job because there were no items on v1
+        var jobs = await _client.GetFromJsonAsync<List<MigrationJobDto>>($"{REQUEST_URI}/NoItems/migration-jobs");
+        Assert.NotNull(jobs);
+        Assert.Empty(jobs);
+    }
+
+    [Fact]
+    public async Task GetMigrationJob_ById_ReturnsJob_WhenExists()
+    {
+        // Arrange
+        string token = await AuthenticationHelper.GetAdminAuthTokenAsync(_client);
+        _client.AddAuthToken(token);
+
+        ContentTypeDto draft = await ContentTypeBuilder.Create(_client).TextField("Title").BuildAsync("JobById");
+        await _client.PostAsJsonAsync($"{REQUEST_URI}/{draft.Name}/publish", new { MigrationMode = "Lazy" });
+
+        ContentTypeDto? publishedV1 = await _client.GetFromJsonAsync<ContentTypeDto>($"{REQUEST_URI}/{draft.Id}");
+        Assert.NotNull(publishedV1);
+
+        // Create an item so a migration job is generated on next publish
+        await _client.PostAsJsonAsync("/content-items", new
+        {
+            Title = "Item",
+            ContentTypeId = publishedV1.Id,
+            Values = new Dictionary<string, object> { { publishedV1.Fields[0].Id.ToString(), "Hello" } }
+        });
+
+        await ContentTypeBuilder.Create(_client).TextField("Title").TextField("Body").BuildAsync("JobById");
+        await _client.PostAsJsonAsync($"{REQUEST_URI}/JobById/publish", new { MigrationMode = "Lazy" });
+
+        var jobs = await _client.GetFromJsonAsync<List<MigrationJobDto>>($"{REQUEST_URI}/JobById/migration-jobs");
+        Assert.NotNull(jobs);
+        Assert.Single(jobs);
+
+        // Act
+        var response = await _client.GetFromJsonAsync<MigrationJobDto>($"{REQUEST_URI.Replace("/content-types", "")}/content-types/migration-jobs/{jobs[0].Id}");
+
+        // Assert
+        Assert.NotNull(response);
+        Assert.Equal(jobs[0].Id, response.Id);
+        Assert.Equal("Lazy", response.Mode);
+    }
+
+    [Fact]
     public async Task GetMigrationJobs_ReturnsEmpty_WhenNoJobsExist()
     {
         string token = await AuthenticationHelper.GetAdminAuthTokenAsync(_client);
