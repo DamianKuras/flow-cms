@@ -83,10 +83,49 @@ public class ContentTypeRepository(
     /// Validation rules are serialized to JSON before persisting to the database
     /// using a shadow property for storage.
     /// </remarks>
-    public async Task UpdateAsync(ContentType contentType, CancellationToken ct = default)
+    public Task UpdateAsync(ContentType contentType, CancellationToken ct = default)
     {
-        DehydrateFields(contentType);
-        _db.ContentTypes.Update(contentType);
+        // Disable auto-detect changes while we inspect entity states.
+        // Without this, calling _db.Entry(contentType) triggers DetectChanges, which traverses
+        // the graph and starts tracking any new Field objects in _fields as Unchanged (because
+        // they have non-zero keys). The FK fixup then marks them as Modified, causing SaveChanges
+        // to attempt an UPDATE on a non-existent row → DbUpdateConcurrencyException.
+        _db.ChangeTracker.AutoDetectChangesEnabled = false;
+        try
+        {
+            bool alreadyTracked = _db.Entry(contentType).State != EntityState.Detached;
+
+            if (alreadyTracked)
+            {
+                // Snapshot the set of fields that were loaded from the DB (already tracked).
+                // Any field in contentType.Fields that is NOT in this snapshot is new.
+                var trackedFieldIds = _db.ChangeTracker
+                    .Entries<Field>()
+                    .Select(e => e.Entity.Id)
+                    .ToHashSet();
+
+                foreach (Field field in contentType.Fields)
+                {
+                    if (!trackedFieldIds.Contains(field.Id))
+                    {
+                        // New field: set the FK shadow property and mark as Added.
+                        _db.Entry(field).Property<Guid>("ContentTypeId").CurrentValue = contentType.Id;
+                        _db.Entry(field).State = EntityState.Added;
+                    }
+                }
+            }
+
+            DehydrateFields(contentType);
+
+            if (!alreadyTracked)
+                _db.ContentTypes.Update(contentType);
+        }
+        finally
+        {
+            _db.ChangeTracker.AutoDetectChangesEnabled = true;
+        }
+
+        return Task.CompletedTask;
     }
 
     /// <inheritdoc />
@@ -468,4 +507,31 @@ public class ContentTypeRepository(
 
     /// <inheritdoc/>
     public async Task SoftDelete(ContentType contentType) => _db.ContentTypes.Remove(contentType);
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<ContentTypeNameSummary>> GetNameSummariesAsync(CancellationToken ct = default)
+    {
+        var rows = await _db.ContentTypes
+            .AsNoTracking()
+            .Where(c => c.Status == ContentTypeStatus.DRAFT || c.Status == ContentTypeStatus.PUBLISHED)
+            .Select(c => new { c.Name, c.Id, c.Status, c.Version })
+            .ToListAsync(ct);
+
+        return rows
+            .GroupBy(c => c.Name)
+            .Select(g =>
+            {
+                var published = g
+                    .Where(c => c.Status == ContentTypeStatus.PUBLISHED)
+                    .OrderByDescending(c => c.Version)
+                    .FirstOrDefault();
+                var draft = g
+                    .Where(c => c.Status == ContentTypeStatus.DRAFT)
+                    .OrderByDescending(c => c.Version)
+                    .FirstOrDefault();
+                return new ContentTypeNameSummary(g.Key, published?.Id, published?.Version, draft?.Id);
+            })
+            .OrderBy(s => s.Name)
+            .ToList();
+    }
 }
