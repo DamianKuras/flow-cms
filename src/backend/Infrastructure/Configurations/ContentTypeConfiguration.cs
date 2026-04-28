@@ -23,6 +23,8 @@ internal class ContentTypeConfiguration : IEntityTypeConfiguration<ContentType>
             .HasForeignKey("ContentTypeId")
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.Navigation(x => x.Fields).HasField("_fields").UsePropertyAccessMode(PropertyAccessMode.Field);
+
         builder.HasQueryFilter(ct => !ct.IsDeleted);
     }
 }

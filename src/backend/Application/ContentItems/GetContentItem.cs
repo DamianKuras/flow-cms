@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Application.Interfaces;
+using Domain;
 using Domain.Common;
 using Domain.ContentItems;
 using Domain.ContentTypes;
@@ -25,6 +26,7 @@ public record GetContentItemQuery(Guid Id);
 public sealed class GetContentItemByIdHandler(
     IContentItemRepository contentItemRepository,
     IContentTypeRepository contentTypeRepository,
+    IMigrationJobRepository migrationJobRepository,
     ILogger<GetContentItemByIdHandler> logger,
     IAuthorizationService authorizationService
 ) : IQueryHandler<GetContentItemQuery, ContentItemDto>
@@ -56,7 +58,8 @@ public sealed class GetContentItemByIdHandler(
             );
         }
 
-        // Retrieve content type.
+        // Retrieve content type — may be null when the item still points at a superseded
+        // (soft-deleted) published schema version.
         ContentType? contentType = await contentTypeRepository.GetByIdAsync(
             contentItem.ContentTypeId,
             cancellationToken
@@ -64,21 +67,52 @@ public sealed class GetContentItemByIdHandler(
 
         if (contentType is null)
         {
-            logger.LogError(
-                "Content type with ID {ContentTypeId} not found for content item {ContentItemId}",
+            // Look for a lazy migration job that covers this item's schema.
+            MigrationJob? lazyJob = await migrationJobRepository.FindLazyJobForSchemaAsync(
                 contentItem.ContentTypeId,
-                query.Id
+                cancellationToken
             );
-            return Result<ContentItemDto>.Failure(
-                Error.Infrastructure(
-                    $"Content type '{contentItem.ContentTypeId}' does not exist for content item '{query.Id}'"
-                )
+
+            if (lazyJob is null)
+            {
+                logger.LogError(
+                    "Content type {ContentTypeId} not found and no lazy migration job exists for item {ContentItemId}",
+                    contentItem.ContentTypeId, query.Id
+                );
+                return Result<ContentItemDto>.Failure(
+                    Error.Infrastructure(
+                        $"Content type '{contentItem.ContentTypeId}' does not exist for content item '{query.Id}'"
+                    )
+                );
+            }
+
+            contentType = await contentTypeRepository.GetByIdAsync(lazyJob.ToSchemaId, cancellationToken);
+            if (contentType is null)
+            {
+                logger.LogError(
+                    "Target schema {ToSchemaId} of migration job {JobId} not found",
+                    lazyJob.ToSchemaId, lazyJob.Id
+                );
+                return Result<ContentItemDto>.Failure(
+                    Error.Infrastructure($"Target schema '{lazyJob.ToSchemaId}' not found.")
+                );
+            }
+
+            contentItem.MigrateToSchema(contentType);
+            await contentItemRepository.UpdateAsync(contentItem);
+            lazyJob.RecordItemMigrated();
+            await migrationJobRepository.UpdateAsync(lazyJob, cancellationToken);
+            await contentItemRepository.SaveChangesAsync(cancellationToken);
+
+            logger.LogInformation(
+                "Lazy-migrated content item {ItemId} from schema {From} to {To}",
+                contentItem.Id, lazyJob.FromSchemaId, lazyJob.ToSchemaId
             );
         }
         // Check permission to read this content item.
         bool isAllowed = await authorizationService.IsAllowedAsync(
             CmsAction.Read,
-            new ContentTypeResource(contentItem.ContentTypeId),
+            new ContentTypeResource(contentType!.Name),
             cancellationToken
         );
         if (!isAllowed)
@@ -99,19 +133,9 @@ public sealed class GetContentItemByIdHandler(
 
         foreach ((Guid fieldId, ContentFieldValue? fieldValue) in contentItem.Values)
         {
+            // Values whose field no longer exists in the schema (orphaned by migration) are skipped.
             if (!fieldLookup.TryGetValue(fieldId, out string? fieldName))
-            {
-                logger.LogWarning(
-                    "Field with ID {FieldId} not found in content type {ContentTypeId}",
-                    fieldId,
-                    contentType.Id
-                );
-                return Result<ContentItemDto>.Failure(
-                    Error.Infrastructure(
-                        $"Field '{fieldId}' in content item does not exist in content type definition"
-                    )
-                );
-            }
+                continue;
 
             valuesDto[fieldName] = new ContentFieldValueDto(
                 JsonSerializer.SerializeToElement(fieldValue.Value)

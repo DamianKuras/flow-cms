@@ -58,7 +58,7 @@ public class Field
     /// <summary>
     /// Gets the name of the field.
     /// </summary>
-    public string Name { get; init; } = default!;
+    public string Name { get; private set; } = default!;
 
     /// <summary>
     /// Gets the data type of the field.
@@ -68,7 +68,7 @@ public class Field
     /// <summary>
     /// Gets a value indicating whether this field is required.
     /// </summary>
-    public bool IsRequired { get; init; }
+    public bool IsRequired { get; private set; }
 
     /// <summary>
     /// Gets the collection of validation rules applied to this field.
@@ -161,6 +161,18 @@ public class Field
         }
 
         return validationResult;
+    }
+
+    /// <summary>
+    /// Updates the mutable properties of an existing field (for draft content type edits).
+    /// </summary>
+    public void Update(string name, FieldTypes type, bool isRequired)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Field name cannot be null or whitespace.", nameof(name));
+        Name = name;
+        Type = type;
+        IsRequired = isRequired;
     }
 
     /// <summary>

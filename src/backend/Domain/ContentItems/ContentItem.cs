@@ -69,6 +69,22 @@ public class ContentItem : ISoftDeletable
     }
 
     /// <summary>
+    /// Migrates this content item to a new schema version by pointing it at the new content type
+    /// and filling in default values for any fields that exist in the new schema but are absent
+    /// from this item's current values. Fields that no longer exist in the new schema are left
+    /// intact in the values dictionary (they are simply ignored during reads).
+    /// </summary>
+    public void MigrateToSchema(ContentType newSchema)
+    {
+        ContentTypeId = newSchema.Id;
+        foreach (Field field in newSchema.Fields)
+        {
+            if (!_values.ContainsKey(field.Id))
+                _values[field.Id] = new ContentFieldValue(FieldTypeDefaults.GetDefaultValue(field.Type));
+        }
+    }
+
+    /// <summary>
     /// Creates a new published version of this content item.
     /// The draft is unchanged; the returned instance is the new published row.
     /// </summary>
