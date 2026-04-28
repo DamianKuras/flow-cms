@@ -2,7 +2,6 @@ using Application.Interfaces;
 using Application.Roles;
 using Domain.Common;
 using Domain.ContentItems;
-using Domain.ContentTypes;
 using Domain.Permissions;
 using Domain.Roles;
 using Domain.Users;
@@ -15,7 +14,6 @@ public class GetRoleTests
 {
     private readonly Mock<IRoleRepository> _mockRoleRepo = new();
     private readonly Mock<IPermissionProvider> _mockPermissionProvider = new();
-    private readonly Mock<IContentTypeRepository> _mockContentTypeRepo = new();
     private readonly Mock<IContentItemRepository> _mockContentItemRepo = new();
     private readonly Mock<IUserContext> _mockUserContext = new();
     private readonly GetRoleQueryHandler _handler;
@@ -24,7 +22,6 @@ public class GetRoleTests
         _handler = new GetRoleQueryHandler(
             _mockRoleRepo.Object,
             _mockPermissionProvider.Object,
-            _mockContentTypeRepo.Object,
             _mockContentItemRepo.Object,
             _mockUserContext.Object,
             Mock.Of<ILogger<GetRoleQueryHandler>>()
@@ -35,7 +32,6 @@ public class GetRoleTests
     {
         // Arrange
         var roleId = Guid.NewGuid();
-        var resourceId = Guid.NewGuid();
         _mockUserContext.Setup(c => c.IsInRoleAsync("Admin")).ReturnsAsync(true);
         _mockRoleRepo
             .Setup(r => r.GetByIdAsync(roleId, It.IsAny<CancellationToken>()))
@@ -53,7 +49,7 @@ public class GetRoleTests
                     PermissionRule.ForResource(
                         ActorType.User,
                         CmsAction.Read,
-                        new ContentTypeResource(resourceId)
+                        new ContentTypeResource("blog-posts")
                     ),
                     PermissionRule.ForResourceType(
                         ActorType.User,

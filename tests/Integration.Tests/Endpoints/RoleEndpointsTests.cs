@@ -312,7 +312,7 @@ public class RoleEndpointsTests
             new CreateRoleCommand("WithPerm")
         );
         CreatedResponse? role = await roleResponse.Content.ReadFromJsonAsync<CreatedResponse>();
-        var resourceId = Guid.NewGuid();
+        const string resourceId = "blog-posts";
 
         await _client.PostAsJsonAsync(
             $"/roles/{role!.Id}/permissions",

@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
 
-import { useContentTypes } from "@/hooks/use-content-types";
+import { useContentTypeSummaries } from "@/hooks/use-content-type-summaries";
 import { useContentType } from "@/hooks/use-content-type";
 import { useContent } from "@/hooks/use-content";
 import type { ResourceType } from "@/hooks/use-roles";
@@ -87,9 +87,8 @@ function ContentTypePicker({
   value: string | null;
   onChange: (id: string | null) => void;
 }) {
-  const { data, isLoading } = useContentTypes(1, 100);
-  const items =
-    data?.data.map((ct) => ({ id: ct.id, label: ct.name })) ?? [];
+  const { data, isLoading } = useContentTypeSummaries();
+  const items = (data ?? []).map((s) => ({ id: s.name, label: s.name }));
 
   return (
     <Combobox

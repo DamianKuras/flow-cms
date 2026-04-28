@@ -49,7 +49,7 @@ public sealed class RolePermissionServiceTests
         Assert.NotNull(entity);
         Assert.Equal(CmsAction.Create, entity.Action);
         Assert.Equal(global::Infrastructure.Persistence.Permissions.ResourceType.ContentItem, entity.ResourceType);
-        Assert.Equal(resourceId, entity.ResourceId);
+        Assert.Equal(resourceId.ToString(), entity.ResourceId);
         Assert.Equal(PermissionScope.Allow, entity.Scope);
     }
 
@@ -65,8 +65,8 @@ public sealed class RolePermissionServiceTests
         var role = new global::Infrastructure.Users.AppRole { Id = roleId, Name = roleId.ToString(), NormalizedName = roleId.ToString() };
         dbContext.Set<global::Infrastructure.Users.AppRole>().Add(role);
         await dbContext.SaveChangesAsync();
-        var resourceId = Guid.NewGuid();
-        
+        const string resourceId = "blog-posts";
+
         var entity = new RolePermissionEntity
         {
             Id = Guid.NewGuid(),

@@ -21,9 +21,10 @@ public sealed class RolePermissionEntity
 
     /// <summary>
     /// The specific resource instance this rule targets.
+    /// For content types this is the stable name; for other resources it is the GUID string.
     /// Null when the rule applies to all resources of <see cref="ResourceType"/>.
     /// </summary>
-    public Guid? ResourceId { get; set; }
+    public string? ResourceId { get; set; }
 
     /// <summary>Whether the rule allows or denies the action.</summary>
     public PermissionScope Scope { get; set; }

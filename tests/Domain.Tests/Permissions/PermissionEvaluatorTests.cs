@@ -128,8 +128,8 @@ public class PermissionEvaluatorTests
     public void IsAllowed_AggregatesAllowRulesAcrossMultipleRoles()
     {
         // Arrange
-        var resource = new ContentTypeResource(Guid.NewGuid());
-        var unrelatedResource = new ContentTypeResource(Guid.NewGuid());
+        var resource = new ContentTypeResource("blog-posts");
+        var unrelatedResource = new ContentTypeResource("products");
         PermissionRule[] rules =
         [
             PermissionRule.ForResource(ActorType.User, CmsAction.Read, resource),

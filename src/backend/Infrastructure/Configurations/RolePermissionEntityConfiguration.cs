@@ -23,7 +23,7 @@ public sealed class RolePermissionConfiguration : IEntityTypeConfiguration<RoleP
 
         builder.Property(rp => rp.Scope).HasConversion<int>().IsRequired();
 
-        builder.Property(rp => rp.ResourceId).IsRequired(false);
+        builder.Property(rp => rp.ResourceId).HasMaxLength(256).IsRequired(false);
 
         builder
             .HasIndex(rp => new { rp.RoleId, rp.Action, rp.ResourceType, rp.ResourceId })

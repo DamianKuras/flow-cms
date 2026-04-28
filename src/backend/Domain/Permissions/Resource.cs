@@ -12,9 +12,9 @@ public abstract record Resource
 }
 
 /// <summary>
-/// Represents a specific content type instance.
+/// Represents a specific content type instance, identified by its stable name.
 /// </summary>
-public sealed record ContentTypeResource(Guid ContentTypeId) : Resource
+public sealed record ContentTypeResource(string Name) : Resource
 {
     /// <inheritdoc/>
     public override ResourceType Type => ResourceType.ContentType;

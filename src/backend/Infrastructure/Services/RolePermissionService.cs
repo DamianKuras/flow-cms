@@ -16,7 +16,7 @@ public sealed class RolePermissionService(AppDbContext db) : IRolePermissionServ
     public async Task AddPermissionToRoleAsync(Guid roleId, PermissionRule rule)
     {
         Persistence.Permissions.ResourceType resourceType = ToResourceType(rule);
-        Guid? resourceId = ToResourceId(rule);
+        string? resourceId = ToResourceId(rule);
 
         bool exists = await db.RolePermissions.AnyAsync(rp =>
             rp.RoleId == roleId
@@ -50,7 +50,7 @@ public sealed class RolePermissionService(AppDbContext db) : IRolePermissionServ
     public async Task RemovePermissionFromRoleAsync(Guid roleId, PermissionRule rule)
     {
         Persistence.Permissions.ResourceType resourceType = ToResourceType(rule);
-        Guid? resourceId = ToResourceId(rule);
+        string? resourceId = ToResourceId(rule);
 
         RolePermissionEntity? entity = await db.RolePermissions.FirstOrDefaultAsync(rp =>
             rp.RoleId == roleId
@@ -67,13 +67,13 @@ public sealed class RolePermissionService(AppDbContext db) : IRolePermissionServ
         }
     }
 
-    private static Guid? ToResourceId(PermissionRule rule) =>
+    private static string? ToResourceId(PermissionRule rule) =>
         rule.Resource switch
         {
-            ContentTypeResource r => r.ContentTypeId,
-            ContentItemResource r => r.ContentItemId,
-            FieldResource r => r.FieldId,
-            UserResource r => r.UserId,
+            ContentTypeResource r => r.Name,
+            ContentItemResource r => r.ContentItemId.ToString(),
+            FieldResource r => r.FieldId.ToString(),
+            UserResource r => r.UserId.ToString(),
             null => null,
             _ => throw new NotSupportedException(
                 $"Resource type '{rule.Resource.GetType().Name}' has no ID mapping."

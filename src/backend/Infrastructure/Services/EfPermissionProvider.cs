@@ -50,13 +50,13 @@ public sealed class EfPermissionProvider(AppDbContext db) : IPermissionProvider
         Resource resource = rp.ResourceType switch
         {
             Persistence.Permissions.ResourceType.ContentType =>
-                new ContentTypeResource(rp.ResourceId.Value),
+                new ContentTypeResource(rp.ResourceId!),
             Persistence.Permissions.ResourceType.ContentItem =>
-                new ContentItemResource(rp.ResourceId.Value),
+                new ContentItemResource(Guid.Parse(rp.ResourceId!)),
             Persistence.Permissions.ResourceType.Field =>
-                new FieldResource(rp.ResourceId.Value),
+                new FieldResource(Guid.Parse(rp.ResourceId!)),
             Persistence.Permissions.ResourceType.User =>
-                new UserResource(rp.ResourceId.Value),
+                new UserResource(Guid.Parse(rp.ResourceId!)),
             _ => throw new NotSupportedException(
                 $"Unsupported resource type '{rp.ResourceType}'."
             ),

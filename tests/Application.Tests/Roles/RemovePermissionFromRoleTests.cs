@@ -29,7 +29,7 @@ public class RemovePermissionFromRoleTests
     {
         // Arrange
         var roleId = Guid.NewGuid();
-        var resourceId = Guid.NewGuid();
+        const string resourceId = "blog-posts";
         var command = new RemovePermissionFromRoleCommand(
             roleId,
             CmsAction.Read,

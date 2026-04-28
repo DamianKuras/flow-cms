@@ -29,7 +29,7 @@ public class AddPermissionToRoleTests
     {
         // Arrange
         var roleId = Guid.NewGuid();
-        var resourceId = Guid.NewGuid();
+        const string resourceId = "blog-posts";
         var command = new AddPermissionToRoleCommand(
             roleId,
             CmsAction.Read,
