@@ -11,42 +11,32 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useContentType, type FieldDto } from "@/hooks/use-content-type";
+import { useContentTypeSummaryByName } from "@/hooks/use-content-type-summaries";
 import { useApiClient } from "@/hooks/use-api-client";
-import {
-  createFileRoute,
-  useNavigate,
-} from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AlertCircle, ArrowLeft, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getValidationRule } from "@/registry/validation-rule-registry";
 
-export const Route = createFileRoute("/_authenticated/content-types/$id/items/new")({
+export const Route = createFileRoute(
+  "/_authenticated/content-types/$name/items/new",
+)({
   component: RouteComponent,
 });
 
 function getApiErrorMessage(error: any): string {
   const data = error?.response?.data;
   if (!data) return error?.message ?? "An unexpected error occurred.";
-  // ValidationProblem — field-level errors
   if (data.errors) {
     return Object.entries(data.errors as Record<string, string[]>)
       .map(([field, msgs]) => `${field}: ${msgs.join(", ")}`)
       .join(" | ");
   }
-  // ProblemDetails — single detail message
   if (data.detail) return data.detail;
   if (data.title) return data.title;
   return error?.message ?? "An unexpected error occurred.";
 }
-
-type ContentTypeDto = {
-  id: string;
-  name: string;
-  status: string;
-  fields: FieldDto[];
-  version: number;
-};
 
 type FormValues = {
   title: string;
@@ -54,35 +44,33 @@ type FormValues = {
 };
 
 function RouteComponent() {
-  const { id } = Route.useParams();
+  const { name } = Route.useParams();
   const navigate = useNavigate();
   const api = useApiClient();
   const queryClient = useQueryClient();
 
-  const { data, error, isLoading } = useContentType(id);
+  const { summary, isLoading: summaryLoading } = useContentTypeSummaryByName(name);
+  const publishedId = summary?.publishedId ?? "";
+  const { data, error, isLoading: typeLoading } = useContentType(publishedId);
 
   const [formValues, setFormValues] = useState<FormValues>({
     title: "",
     fieldValues: {},
   });
-  const [validationErrors, setValidationErrors] = useState<
-    Record<string, string[]>
-  >({});
+  const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
 
   const createMutation = useMutation({
     mutationFn: async (values: FormValues) => {
-      const payload = {
+      const response = await api.post(`/content-items`, {
         title: values.title,
-        contentTypeId: id,
+        contentTypeId: publishedId,
         values: values.fieldValues,
-      };
-
-      const response = await api.post(`/content-items`, payload);
+      });
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["content", id] });
-      navigate({ to: "/content-types/$id/items", params: { id } });
+      queryClient.invalidateQueries({ queryKey: ["content", publishedId] });
+      navigate({ to: "/content-types/$name/items", params: { name } });
     },
     onError: () => {},
   });
@@ -90,12 +78,8 @@ function RouteComponent() {
   const handleInputChange = (fieldId: string, value: any) => {
     setFormValues((prev) => ({
       ...prev,
-      fieldValues: {
-        ...prev.fieldValues,
-        [fieldId]: value,
-      },
+      fieldValues: { ...prev.fieldValues, [fieldId]: value },
     }));
-
     if (validationErrors[fieldId]) {
       setValidationErrors((prev) => {
         const next = { ...prev };
@@ -118,66 +102,59 @@ function RouteComponent() {
 
   const validateField = (field: FieldDto, value: string | null) => {
     const errors: string[] = [];
-
-    // required
     if (field.isRequired && (value === "" || value == null)) {
       errors.push(`${field.name} is required`);
     }
-
-    // validation rules
     for (const rule of field.validationRules ?? []) {
       const plugin = getValidationRule(rule.type);
       if (plugin) {
-        const error = plugin.validate(
-          value,
-          rule.parameters || {},
-          formValues.fieldValues,
-        );
-        if (error) {
-          errors.push(error);
-        }
+        const err = plugin.validate(value, rule.parameters || {}, formValues.fieldValues);
+        if (err) errors.push(err);
       }
     }
-
     return errors;
   };
 
-  const validateForm = (contentType: ContentTypeDto): boolean => {
+  const validateForm = (fields: FieldDto[]): boolean => {
     const errors: Record<string, string[]> = {};
-
     if (!formValues.title?.trim()) {
       errors.title = ["Title is required"];
     }
-
-    contentType.fields.forEach((field) => {
-      const value = formValues.fieldValues[field.id];
-      const fieldErrors = validateField(field, value);
-
-      if (fieldErrors.length > 0) {
-        errors[field.id] = fieldErrors;
-      }
+    fields.forEach((field) => {
+      const fieldErrors = validateField(field, formValues.fieldValues[field.id]);
+      if (fieldErrors.length > 0) errors[field.id] = fieldErrors;
     });
-
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!data?.contentType || !validateForm(data.contentType)) {
-      return;
-    }
-
+    const fields = data?.contentType?.fields;
+    if (!fields || !validateForm(fields)) return;
     createMutation.mutate(formValues);
   };
 
+  const isLoading = summaryLoading || (!!publishedId && typeLoading);
+
   if (isLoading) {
     return (
+      <div className="flex-1 p-6 flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!summary?.publishedId) {
+    return (
       <div className="flex-1 p-6">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>No Published Version</AlertTitle>
+          <AlertDescription>
+            Publish the schema first before creating items.
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
@@ -188,26 +165,14 @@ function RouteComponent() {
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error Loading Content Type</AlertTitle>
-          <AlertDescription>
-            {error.message || "Could not load content type information."}
-          </AlertDescription>
+          <AlertDescription>{error.message}</AlertDescription>
         </Alert>
       </div>
     );
   }
 
   if (!data?.contentType) {
-    return (
-      <div className="flex-1 p-6">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Content Type Not Found</AlertTitle>
-          <AlertDescription>
-            The content type could not be loaded.
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
+    return null;
   }
 
   const contentType = data.contentType;
@@ -218,15 +183,14 @@ function RouteComponent() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate({ to: `/content-types/${id}/items` })}
+          onClick={() => navigate({ to: "/content-types/$name/items", params: { name } })}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to {contentType.name}
+          Back to {name}
         </Button>
         <h1 className="text-3xl font-bold">Create New Content Item</h1>
         <p className="text-muted-foreground">
-          Creating content of type:{" "}
-          <span className="font-semibold">{contentType.name}</span>
+          Creating content of type: <span className="font-semibold">{name}</span>
         </p>
       </div>
 
@@ -234,9 +198,7 @@ function RouteComponent() {
         <Card>
           <CardHeader>
             <CardTitle>Basic Information</CardTitle>
-            <CardDescription>
-              Enter the basic details for this content item
-            </CardDescription>
+            <CardDescription>Enter the basic details for this content item</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -251,9 +213,7 @@ function RouteComponent() {
                 className={validationErrors.title ? "border-destructive" : ""}
               />
               {validationErrors.title && (
-                <p className="text-sm text-destructive">
-                  {validationErrors.title}
-                </p>
+                <p className="text-sm text-destructive">{validationErrors.title}</p>
               )}
             </div>
           </CardContent>
@@ -263,31 +223,23 @@ function RouteComponent() {
           <Card>
             <CardHeader>
               <CardTitle>Content Fields</CardTitle>
-              <CardDescription>
-                Enter values for the content fields
-              </CardDescription>
+              <CardDescription>Enter values for the content fields</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {contentType.fields.map((field) => (
                 <div key={field.id} className="space-y-2">
                   <Label htmlFor={field.id}>
                     {field.name}
-                    {field.isRequired && (
-                      <span className="text-destructive ml-1">*</span>
-                    )}
+                    {field.isRequired && <span className="text-destructive ml-1">*</span>}
                   </Label>
 
                   {(field.type === "Text" || field.type === "ShortText") && (
                     <Input
                       id={field.id}
                       value={formValues.fieldValues[field.id] || ""}
-                      onChange={(e) =>
-                        handleInputChange(field.id, e.target.value)
-                      }
+                      onChange={(e) => handleInputChange(field.id, e.target.value)}
                       placeholder={`Enter ${field.name}`}
-                      className={
-                        validationErrors[field.id] ? "border-destructive" : ""
-                      }
+                      className={validationErrors[field.id] ? "border-destructive" : ""}
                     />
                   )}
 
@@ -295,14 +247,10 @@ function RouteComponent() {
                     <Textarea
                       id={field.id}
                       value={formValues.fieldValues[field.id] || ""}
-                      onChange={(e) =>
-                        handleInputChange(field.id, e.target.value)
-                      }
+                      onChange={(e) => handleInputChange(field.id, e.target.value)}
                       placeholder={`Enter ${field.name}`}
                       rows={6}
-                      className={
-                        validationErrors[field.id] ? "border-destructive" : ""
-                      }
+                      className={validationErrors[field.id] ? "border-destructive" : ""}
                     />
                   )}
 
@@ -312,36 +260,21 @@ function RouteComponent() {
                       type="number"
                       value={formValues.fieldValues[field.id] ?? ""}
                       onChange={(e) => {
-                        const num =
-                          e.target.value === ""
-                            ? ""
-                            : parseFloat(e.target.value);
+                        const num = e.target.value === "" ? "" : parseFloat(e.target.value);
                         handleInputChange(field.id, num);
                       }}
                       placeholder={`Enter ${field.name}`}
-                      className={
-                        validationErrors[field.id] ? "border-destructive" : ""
-                      }
+                      className={validationErrors[field.id] ? "border-destructive" : ""}
                     />
                   )}
 
-                  {![
-                    "Text",
-                    "ShortText",
-                    "LongText",
-                    "RichText",
-                    "Numeric",
-                  ].includes(field.type) && (
+                  {!["Text", "ShortText", "LongText", "RichText", "Numeric"].includes(field.type) && (
                     <Input
                       id={field.id}
                       value={formValues.fieldValues[field.id] || ""}
-                      onChange={(e) =>
-                        handleInputChange(field.id, e.target.value)
-                      }
+                      onChange={(e) => handleInputChange(field.id, e.target.value)}
                       placeholder={`Enter ${field.name} (${field.type})`}
-                      className={
-                        validationErrors[field.id] ? "border-destructive" : ""
-                      }
+                      className={validationErrors[field.id] ? "border-destructive" : ""}
                     />
                   )}
 
@@ -355,21 +288,9 @@ function RouteComponent() {
 
                   {field.validationRules?.map((rule) => {
                     const plugin = getValidationRule(rule.type);
-                    if (!plugin || !plugin.HintComponent) return null;
-
+                    if (!plugin?.HintComponent) return null;
                     const Hint = plugin.HintComponent;
-                    return (
-                      <Hint key={rule.type} params={rule.parameters || {}} />
-                    );
-                  })}
-                  {field.transformationRules?.map((rule) => {
-                    const plugin = getValidationRule(rule.type);
-                    if (!plugin || !plugin.HintComponent) return null;
-
-                    const Hint = plugin.HintComponent;
-                    return (
-                      <Hint key={rule.type} params={rule.parameters || {}} />
-                    );
+                    return <Hint key={rule.type} params={rule.parameters || {}} />;
                   })}
                 </div>
               ))}
@@ -381,23 +302,19 @@ function RouteComponent() {
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error Creating Content Item</AlertTitle>
-            <AlertDescription>
-              {getApiErrorMessage(createMutation.error)}
-            </AlertDescription>
+            <AlertDescription>{getApiErrorMessage(createMutation.error)}</AlertDescription>
           </Alert>
         )}
 
         <div className="flex gap-3">
           <Button type="submit" disabled={createMutation.isPending}>
-            {createMutation.isPending && (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            )}
+            {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Create Content Item
           </Button>
           <Button
             type="button"
             variant="outline"
-            onClick={() => navigate({ to: `/content-types/${id}/items` })}
+            onClick={() => navigate({ to: "/content-types/$name/items", params: { name } })}
             disabled={createMutation.isPending}
           >
             Cancel

@@ -170,8 +170,8 @@ function RouteComponent() {
     <div className="flex-1 space-y-6 p-6">
       <Button variant="ghost" size="sm" asChild>
         <Link
-          to={item.contentTypeId ? "/content-types/$id/items" : "/"}
-          params={item.contentTypeId ? { id: item.contentTypeId } : undefined}
+          to={item.contentTypeName ? "/content-types/$name/items" : "/"}
+          params={item.contentTypeName ? { name: item.contentTypeName } : undefined}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to {item.contentTypeName || "Content Items"}

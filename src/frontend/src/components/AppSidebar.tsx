@@ -10,7 +10,7 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
-import { useContentTypes } from "@/hooks/use-content-types";
+import { useContentTypeSummaries } from "@/hooks/use-content-type-summaries";
 import { Link } from "@tanstack/react-router";
 import {
   BookOpen,
@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 
 export function AppSidebar() {
-  const { status, data, error } = useContentTypes();
+  const { status, data, error } = useContentTypeSummaries();
 
   return (
     <Sidebar>
@@ -86,20 +86,6 @@ export function AppSidebar() {
                 </p>
               ) : (
                 <>
-                  {data.data.map((content_type) => (
-                    <SidebarMenuItem key={content_type.id}>
-                      <SidebarMenuButton asChild>
-                        <Link
-                          to="/content-types/$id/items"
-                          params={{ id: content_type.id }}
-                          className="[&.active]:bg-sidebar-accent [&.active]:font-medium"
-                        >
-                          <FileText className="h-4 w-4 shrink-0" />
-                          {content_type.name}
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild>
                       <Link
@@ -111,6 +97,20 @@ export function AppSidebar() {
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
+                  {data.map((summary) => (
+                    <SidebarMenuItem key={summary.name}>
+                      <SidebarMenuButton asChild>
+                        <Link
+                          to="/content-types/$name"
+                          params={{ name: summary.name }}
+                          className="[&.active]:bg-sidebar-accent [&.active]:font-medium"
+                        >
+                          <FileText className="h-4 w-4 shrink-0" />
+                          {summary.name}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
                 </>
               )}
             </SidebarMenu>
