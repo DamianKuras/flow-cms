@@ -65,7 +65,7 @@ public sealed class GetContentItemsHandler(
         // Check permission to list content items of this type.
         bool isAllowed = await authorizationService.IsAllowedAsync(
             CmsAction.Read,
-            new ContentTypeResource(query.ContentTypeId),
+            new ContentTypeResource(contentType.Name),
             cancellationToken
         );
 

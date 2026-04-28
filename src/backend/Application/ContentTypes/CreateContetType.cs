@@ -113,9 +113,9 @@ public sealed class CreateContentTypeCommandHandler(
     )
     {
         logger.LogInformation("Handling CreateContentTypeCommand for Name={Name}", command.Name);
-        bool allowed = await authorizationService.IsAllowedAsync(
+        bool allowed = await authorizationService.IsAllowedForTypeAsync(
             CmsAction.Create,
-            new ContentTypeResource(Guid.Empty), // global create
+            ResourceType.ContentType,
             cancellationToken
         );
 

@@ -12,7 +12,7 @@ public sealed record RemovePermissionFromRoleCommand(
     Guid RoleId,
     CmsAction Action,
     ResourceType ResourceType,
-    Guid? ResourceId,
+    string? ResourceId,
     PermissionScope Scope
 );
 
@@ -70,7 +70,7 @@ public sealed class RemovePermissionFromRoleCommandHandler(
             ? PermissionRule.ForResource(
                 ActorType.User,
                 command.Action,
-                ToResource(command.ResourceType, command.ResourceId.Value),
+                ToResource(command.ResourceType, command.ResourceId),
                 command.Scope
             )
             : PermissionRule.ForResourceType(
@@ -80,12 +80,12 @@ public sealed class RemovePermissionFromRoleCommandHandler(
                 command.Scope
             );
 
-    private static Resource ToResource(ResourceType resourceType, Guid resourceId) =>
+    private static Resource ToResource(ResourceType resourceType, string resourceId) =>
         resourceType switch
         {
             ResourceType.ContentType => new ContentTypeResource(resourceId),
-            ResourceType.ContentItem => new ContentItemResource(resourceId),
-            ResourceType.Field => new FieldResource(resourceId),
+            ResourceType.ContentItem => new ContentItemResource(Guid.Parse(resourceId)),
+            ResourceType.Field => new FieldResource(Guid.Parse(resourceId)),
             _ => throw new NotSupportedException(
                 $"Resource type '{resourceType}' is not supported for permission removal."
             ),

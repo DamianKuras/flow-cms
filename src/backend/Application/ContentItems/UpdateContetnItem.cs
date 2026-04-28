@@ -50,18 +50,6 @@ public sealed class UpdateContentItemHandler(
             );
         }
 
-        bool isAllowed = await authorizationService.IsAllowedAsync(
-            CmsAction.Update,
-            new ContentTypeResource(contentItem.ContentTypeId),
-            cancellationToken
-        );
-        if (!isAllowed)
-        {
-            return Result<Guid>.Failure(
-                Error.Forbidden("You do not have permission to update this content item")
-            );
-        }
-
         ContentType? contentType = await contentTypeRepository.GetByIdAsync(
             contentItem.ContentTypeId,
             cancellationToken
@@ -78,6 +66,18 @@ public sealed class UpdateContentItemHandler(
                 Error.Infrastructure(
                     $"Content type '{contentItem.ContentTypeId}' does not exist for content item '{command.ContentItemId}'"
                 )
+            );
+        }
+
+        bool isAllowed = await authorizationService.IsAllowedAsync(
+            CmsAction.Update,
+            new ContentTypeResource(contentType.Name),
+            cancellationToken
+        );
+        if (!isAllowed)
+        {
+            return Result<Guid>.Failure(
+                Error.Forbidden("You do not have permission to update this content item")
             );
         }
 

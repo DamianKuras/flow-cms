@@ -253,14 +253,9 @@ function PermissionsTable({
                 </TableCell>
                 <TableCell>
                   {perm.resourceId ? (
-                    <div className="space-y-0.5">
-                      <span className="text-sm font-medium">
-                        {perm.resourceName ?? perm.resourceId.slice(0, 8) + "…"}
-                      </span>
-                      <div className="font-mono text-xs text-muted-foreground">
-                        {perm.resourceId}
-                      </div>
-                    </div>
+                    <span className="text-sm font-medium">
+                      {perm.resourceName ?? perm.resourceId}
+                    </span>
                   ) : (
                     <span className="text-xs text-muted-foreground italic">all</span>
                   )}

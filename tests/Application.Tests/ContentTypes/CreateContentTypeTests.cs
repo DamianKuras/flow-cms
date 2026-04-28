@@ -32,9 +32,9 @@ public class CreateContentTypeCommandHandlerTests
         _mockLogger = new Mock<ILogger<CreateContentTypeCommandHandler>>();
         _mockAuth
             .Setup(r =>
-                r.IsAllowedAsync(
+                r.IsAllowedForTypeAsync(
                     It.IsAny<Domain.Permissions.CmsAction>(),
-                    It.IsAny<Domain.Permissions.Resource>(),
+                    It.IsAny<Domain.Permissions.ResourceType>(),
                     It.IsAny<CancellationToken>()
                 )
             )

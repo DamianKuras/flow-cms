@@ -151,12 +151,16 @@ public class UpdateContentItemHandlerTests
     public async Task Handle_WhenUnauthorized_ReturnsForbidden()
     {
         // Arrange
+        ContentType contentType = BuildContentType();
         var contentItemId = Guid.NewGuid();
-        var contentItem = new ContentItem(contentItemId, "My Item", Guid.NewGuid());
+        var contentItem = new ContentItem(contentItemId, "My Item", contentType.Id);
 
         _mockContentItemRepository
             .Setup(r => r.GetByIdAsync(contentItemId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(contentItem);
+        _mockContentTypeRepository
+            .Setup(r => r.GetByIdAsync(contentType.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(contentType);
         _mockAuth
             .Setup(a =>
                 a.IsAllowedAsync(

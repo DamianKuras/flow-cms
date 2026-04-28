@@ -48,7 +48,7 @@ public sealed class ArchiveContentTypeCommandHandler(
 
         bool allowed = await authorizationService.IsAllowedAsync(
             CmsAction.Archive,
-            new ContentTypeResource(publication.Id),
+            new ContentTypeResource(publication.Name),
             cancellationToken
         );
 

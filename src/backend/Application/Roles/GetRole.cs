@@ -1,7 +1,6 @@
 using Application.Interfaces;
 using Domain.Common;
 using Domain.ContentItems;
-using Domain.ContentTypes;
 using Domain.Permissions;
 using Domain.Roles;
 using Domain.Users;
@@ -16,7 +15,7 @@ public sealed record GetRoleQuery(Guid Id);
 public sealed record PermissionDto(
     CmsAction Action,
     ResourceType ResourceType,
-    Guid? ResourceId,
+    string? ResourceId,
     string? ResourceName,
     PermissionScope Scope
 );
@@ -32,7 +31,6 @@ public sealed record GetRoleResponse(
 public sealed class GetRoleQueryHandler(
     IRoleRepository roleRepository,
     IPermissionProvider permissionProvider,
-    IContentTypeRepository contentTypeRepository,
     IContentItemRepository contentItemRepository,
     IUserContext userContext,
     ILogger<GetRoleQueryHandler> logger
@@ -61,7 +59,7 @@ public sealed class GetRoleQueryHandler(
         IReadOnlyCollection<PermissionRule> permissions =
             await permissionProvider.GetPermissionsAsync([query.Id], cancellationToken);
 
-        Dictionary<Guid, string> resourceNames = await ResolveResourceNamesAsync(
+        Dictionary<string, string> resourceNames = await ResolveResourceNamesAsync(
             permissions,
             cancellationToken
         );
@@ -69,12 +67,12 @@ public sealed class GetRoleQueryHandler(
         var permissionDtos = permissions
             .Select(p =>
             {
-                Guid? resourceId = GetResourceId(p.Resource);
+                string? resourceId = GetResourceId(p.Resource);
                 return new PermissionDto(
                     p.Action,
                     p.Resource?.Type ?? p.ResourceType!.Value,
                     resourceId,
-                    resourceId.HasValue ? resourceNames.GetValueOrDefault(resourceId.Value) : null,
+                    resourceId is not null ? resourceNames.GetValueOrDefault(resourceId) : null,
                     p.Scope
                 );
             })
@@ -85,16 +83,19 @@ public sealed class GetRoleQueryHandler(
         );
     }
 
-    private async Task<Dictionary<Guid, string>> ResolveResourceNamesAsync(
+    private async Task<Dictionary<string, string>> ResolveResourceNamesAsync(
         IReadOnlyCollection<PermissionRule> permissions,
         CancellationToken ct
     )
     {
-        var contentTypeIds = permissions
-            .Where(p => p.Resource is ContentTypeResource)
-            .Select(p => ((ContentTypeResource)p.Resource!).ContentTypeId)
-            .Distinct()
-            .ToList();
+        var result = new Dictionary<string, string>();
+
+        // Content type name IS the resourceId — no lookup needed.
+        foreach (var p in permissions.Where(p => p.Resource is ContentTypeResource))
+        {
+            var name = ((ContentTypeResource)p.Resource!).Name;
+            result[name] = name;
+        }
 
         var contentItemIds = permissions
             .Where(p => p.Resource is ContentItemResource)
@@ -102,42 +103,26 @@ public sealed class GetRoleQueryHandler(
             .Distinct()
             .ToList();
 
-        ContentType?[] contentTypes = await Task.WhenAll(
-            contentTypeIds.Select(id => contentTypeRepository.GetByIdAsync(id, ct))
-        );
-
         ContentItem?[] contentItems = await Task.WhenAll(
             contentItemIds.Select(id => contentItemRepository.GetByIdAsync(id, ct))
         );
 
-        var result = new Dictionary<Guid, string>();
-
-        foreach ((Guid id, ContentType? ct2) in contentTypeIds.Zip(contentTypes))
-        {
-            if (ct2 is not null)
-            {
-                result[id] = ct2.Name;
-            }
-        }
-
         foreach ((Guid id, ContentItem? ci) in contentItemIds.Zip(contentItems))
         {
             if (ci is not null)
-            {
-                result[id] = ci.Title;
-            }
+                result[id.ToString()] = ci.Title;
         }
 
         return result;
     }
 
-    private static Guid? GetResourceId(Resource? resource) =>
+    private static string? GetResourceId(Resource? resource) =>
         resource switch
         {
-            ContentTypeResource r => r.ContentTypeId,
-            ContentItemResource r => r.ContentItemId,
-            FieldResource r => r.FieldId,
-            UserResource r => r.UserId,
+            ContentTypeResource r => r.Name,
+            ContentItemResource r => r.ContentItemId.ToString(),
+            FieldResource r => r.FieldId.ToString(),
+            UserResource r => r.UserId.ToString(),
             _ => null,
         };
 }
