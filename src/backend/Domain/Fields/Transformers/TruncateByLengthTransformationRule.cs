@@ -31,8 +31,6 @@ public sealed class TruncateByLengthTransformationRule : ParameterizedTransforma
     /// </summary>
     public override Capability RequiredCapability => new Capability(Capability.Standard.TEXT);
 
-    private readonly int _maxLength;
-
     /// <summary>
     /// Initializes a new instance of the <see cref="TruncateByLengthTransformationRule"/> class
     /// with the specified maximum length.
@@ -51,7 +49,6 @@ public sealed class TruncateByLengthTransformationRule : ParameterizedTransforma
         }
 
         Parameters.Add(TRUNCATION_LENGTH_PARAM, truncationLength);
-        _maxLength = truncationLength;
     }
 
     /// <inheritdoc/>
@@ -64,19 +61,25 @@ public sealed class TruncateByLengthTransformationRule : ParameterizedTransforma
 
         if (value is not string str)
         {
-            return value; // only transform strings
+            return value;
         }
 
-        if (_maxLength == 0)
+        if (!Parameters.TryGetValue(TRUNCATION_LENGTH_PARAM, out object? rawMax)
+            || !int.TryParse(rawMax?.ToString(), out int maxLength))
+        {
+            return value;
+        }
+
+        if (maxLength == 0)
         {
             return string.Empty;
         }
 
-        if (str.Length <= _maxLength)
+        if (str.Length <= maxLength)
         {
             return str;
         }
 
-        return str[.._maxLength];
+        return str[..maxLength];
     }
 }

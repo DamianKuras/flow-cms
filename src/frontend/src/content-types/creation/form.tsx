@@ -42,9 +42,9 @@ export function CreateContentTypeForm() {
     onSubmit: async ({ value }) => {
       setErrorMessage(null);
       createContentType.mutate(value, {
-        onSuccess: (data) => {
+        onSuccess: () => {
           form.reset();
-          navigate({ to: "/content-types/$id", params: { id: data.id } });
+          navigate({ to: "/content-types/$name", params: { name: value.name } });
         },
         onError: (_) => {
           setErrorMessage(t("contentType.create.errorRetry"));

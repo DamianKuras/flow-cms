@@ -10,11 +10,11 @@ export type CreateContentTypeData = {
     isRequired: boolean;
     validationRules: Array<{
       type: string;
-      parameters: Record<string, string>;
+      parameters: Record<string, string | number | boolean>;
     }>;
     transformationRules: Array<{
       type: string;
-      parameters: Record<string, string>;
+      parameters: Record<string, string | number | boolean>;
     }>;
   }>;
 };

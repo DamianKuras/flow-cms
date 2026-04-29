@@ -38,15 +38,22 @@ export function ValidationRulesSection({
               </p>
             ) : (
               <div className="space-y-3">
-                {rulesForField.state.value.map((_: any, ruleIndex: number) => (
-                  <ValidationRuleRow
-                    key={ruleIndex}
-                    form={form}
-                    fieldIndex={fieldIndex}
-                    ruleIndex={ruleIndex}
-                    rulesForField={rulesForField}
-                  />
-                ))}
+                {rulesForField.state.value.map((_: any, ruleIndex: number) => {
+                  const usedTypes: string[] = rulesForField.state.value
+                    .filter((_: any, i: number) => i !== ruleIndex)
+                    .map((r: any) => r.type)
+                    .filter((t: string) => t !== "");
+                  return (
+                    <ValidationRuleRow
+                      key={ruleIndex}
+                      form={form}
+                      fieldIndex={fieldIndex}
+                      ruleIndex={ruleIndex}
+                      rulesForField={rulesForField}
+                      usedTypes={usedTypes}
+                    />
+                  );
+                })}
               </div>
             )}
 
@@ -81,6 +88,7 @@ interface ValidationRuleRowProps {
   fieldIndex: number;
   ruleIndex: number;
   rulesForField: any;
+  usedTypes: string[];
 }
 
 function ValidationRuleRow({
@@ -88,12 +96,15 @@ function ValidationRuleRow({
   fieldIndex,
   ruleIndex,
   rulesForField,
+  usedTypes,
 }: ValidationRuleRowProps) {
   const currentFieldType = useStore(form.store, (state) => {
     const formState = state as { values: ContentTypeCreateFormData };
     return formState?.values?.fields?.[fieldIndex]?.type;
   });
-  const allowedTypes = getAllowedValidations(currentFieldType);
+  const allowedTypes = getAllowedValidations(currentFieldType).filter(
+    (t) => !usedTypes.includes(t),
+  );
   return (
     <form.Field
       name={`fields[${fieldIndex}].validationRules[${ruleIndex}].type`}

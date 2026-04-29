@@ -32,12 +32,10 @@ function TruncateByLengthConfig({ value, onChange }: { value: Record<string, unk
       <Input
         type="number"
         value={(value.truncationLength as string | number) ?? ""}
-        onChange={(e) =>
-          onChange({
-            ...value,
-            truncationLength: e.target.value,
-          })
-        }
+        onChange={(e) => {
+          const n = parseInt(e.target.value, 10);
+          onChange({ ...value, truncationLength: isNaN(n) ? undefined : n });
+        }}
       />
     </div>
   );

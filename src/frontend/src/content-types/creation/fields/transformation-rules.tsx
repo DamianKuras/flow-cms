@@ -35,15 +35,22 @@ export function TransformationRulesSection({
             {transformationsForField.state.value.length > 0 && (
               <div className="space-y-3">
                 {transformationsForField.state.value.map(
-                  (_: any, ruleIndex: number) => (
-                    <TransformationRuleRow
-                      key={ruleIndex}
-                      form={form}
-                      fieldIndex={fieldIndex}
-                      ruleIndex={ruleIndex}
-                      transformationsForField={transformationsForField}
-                    />
-                  ),
+                  (_: any, ruleIndex: number) => {
+                    const usedTypes: string[] = transformationsForField.state.value
+                      .filter((_: any, i: number) => i !== ruleIndex)
+                      .map((r: any) => r.type)
+                      .filter((t: string) => t !== "");
+                    return (
+                      <TransformationRuleRow
+                        key={ruleIndex}
+                        form={form}
+                        fieldIndex={fieldIndex}
+                        ruleIndex={ruleIndex}
+                        transformationsForField={transformationsForField}
+                        usedTypes={usedTypes}
+                      />
+                    );
+                  },
                 )}
               </div>
             )}
@@ -76,6 +83,7 @@ interface TransformationRuleRowProps {
   fieldIndex: number;
   ruleIndex: number;
   transformationsForField: AnyFieldApi;
+  usedTypes: string[];
 }
 
 function TransformationRuleRow({
@@ -83,13 +91,16 @@ function TransformationRuleRow({
   transformationsForField,
   fieldIndex,
   ruleIndex,
+  usedTypes,
 }: TransformationRuleRowProps) {
   const currentFieldType = useStore(form.store, (state) => {
     const formState = state as { values: ContentTypeCreateFormData };
     return formState?.values?.fields?.[fieldIndex]?.type;
   });
 
-  const allowedTypes = getAllowedTransformations(currentFieldType);
+  const allowedTypes = getAllowedTransformations(currentFieldType).filter(
+    (t) => !usedTypes.includes(t),
+  );
 
   return (
     <form.Field
