@@ -26,7 +26,7 @@ public sealed class DockerComposeFixture : IAsyncDisposable
 
     private string DbConnectionString { get; } =
         Environment.GetEnvironmentVariable("E2E_DB_CONNECTION_STRING")
-        ?? "Host=localhost;Port=5444;Database=e2e_testdb;Username=testuser;Password=testpassword";
+        ?? "Host=localhost;Port=5444;Database=e2e_testdb;Username=testuser;Password=testpassword;Maximum Pool Size=5";
 
     private static bool IsAttachedMode =>
         !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("E2E_API_URL"));
@@ -58,7 +58,7 @@ public sealed class DockerComposeFixture : IAsyncDisposable
         await using var conn = new NpgsqlConnection(DbConnectionString);
         await conn.OpenAsync();
         await using var cmd = new NpgsqlCommand(
-            "TRUNCATE \"Fields\", content_items, content_types CASCADE;",
+            "TRUNCATE \"Fields\", content_items, migration_jobs, content_types CASCADE;",
             conn
         );
         await cmd.ExecuteNonQueryAsync();

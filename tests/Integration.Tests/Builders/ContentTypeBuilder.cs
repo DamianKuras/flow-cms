@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using Application.ContentTypes;
+using Domain;
 using Domain.Fields;
 using Integration.Tests.Infrastructure;
 
@@ -46,5 +47,26 @@ public sealed class ContentTypeBuilder
         Assert.NotNull(data);
 
         return data;
+    }
+
+    public async Task<ContentTypeDto> BuildAndPublishAsync(
+        string name = "TestType",
+        MigrationMode migrationMode = MigrationMode.Lazy
+    )
+    {
+        ContentTypeDto draft = await BuildAsync(name);
+
+        HttpResponseMessage publishResponse = await _client.PostAsJsonAsync(
+            $"/content-types/{name}/publish",
+            new { MigrationMode = migrationMode.ToString() }
+        );
+        publishResponse.EnsureSuccessStatusCode();
+
+        // Reload to get the published version.
+        ContentTypeDto? published = await _client.GetFromJsonAsync<ContentTypeDto>(
+            $"/content-types/{draft.Id}"
+        );
+        Assert.NotNull(published);
+        return published;
     }
 }

@@ -19,16 +19,17 @@ public static class AuthHelper
         string password = E2EEnv.Require("E2E_ADMIN_PASSWORD");
 
         await page.GotoAsync("/login");
-        await page.WaitForSelectorAsync("#username");
+        await page.WaitForSelectorAsync("#email");
 
-        await page.FillAsync("#username", email);
+        await page.FillAsync("#email", email);
         await page.FillAsync("#password", password);
         await page.ClickAsync($"button:has-text('{T.Auth.Submit}')");
 
-        // Wait until the app redirects away from /login
-        await page.WaitForURLAsync(
-            url => !url.Contains("/login"),
-            new PageWaitForURLOptions { Timeout = 10_000 }
+        // WaitForURLAsync can miss fast SPA navigation events; poll JS directly instead.
+        await page.WaitForFunctionAsync(
+            "!window.location.href.includes('/login')",
+            null,
+            new PageWaitForFunctionOptions { Timeout = 10_000 }
         );
     }
 

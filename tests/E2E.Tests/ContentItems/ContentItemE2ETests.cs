@@ -57,9 +57,11 @@ public class ContentItemE2ETests : E2ETestBase
         Page.Dialog += async (_, dialog) => await dialog.AcceptAsync();
         await Page.GetByRole(AriaRole.Button, new() { Name = "Delete" }).ClickAsync();
 
-        await Page.WaitForURLAsync(
-            url => !url.Contains($"content-items/{itemId}"),
-            new PageWaitForURLOptions { Timeout = 10_000 }
+        string idStr = itemId.ToString();
+        await Page.WaitForFunctionAsync(
+            $"!window.location.href.includes('{idStr}')",
+            null,
+            new PageWaitForFunctionOptions { Timeout = 10_000 }
         );
 
         Assert.Equal("/", new Uri(Page.Url).AbsolutePath);
@@ -88,9 +90,11 @@ public class ContentItemE2ETests : E2ETestBase
         await Page.FillAsync("input#title", "Updated Title");
         await Page.GetByRole(AriaRole.Button, new() { Name = "Save Changes" }).ClickAsync();
 
-        await Page.WaitForURLAsync(
-            url => url.Contains($"content-items/{itemId}") && !url.Contains("edit"),
-            new PageWaitForURLOptions { Timeout = 10_000 }
+        string idStr = itemId.ToString();
+        await Page.WaitForFunctionAsync(
+            $"window.location.href.includes('{idStr}') && !window.location.href.includes('edit')",
+            null,
+            new PageWaitForFunctionOptions { Timeout = 10_000 }
         );
 
         Assert.DoesNotContain("edit", Page.Url);
