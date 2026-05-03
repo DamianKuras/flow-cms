@@ -15,6 +15,11 @@ public class RegexRule : ParameterizedValidationRuleBase
     private const string REGEX_PARAMETER_KEY = "regex";
 
     /// <summary>
+    /// Parameterless constructor required for registry discovery.
+    /// </summary>
+    public RegexRule() { }
+
+    /// <summary>
     /// Constructor for Regex rule.
     /// </summary>
     /// <param name="pattern">
@@ -37,12 +42,12 @@ public class RegexRule : ParameterizedValidationRuleBase
             errors.Add("Value must be string.");
             return;
         }
-        string? pattern = Parameters[REGEX_PARAMETER_KEY]?.ToString();
-        if (pattern is null)
+        if (!Parameters.TryGetValue(REGEX_PARAMETER_KEY, out object? raw) || raw is null)
         {
             errors.Add("Invalid pattern configuration.");
             return;
         }
+        string pattern = raw.ToString()!;
         if (!Regex.IsMatch(s, pattern))
         {
             errors.Add($"Value does not match pattern '{pattern}'.");
