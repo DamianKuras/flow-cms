@@ -149,7 +149,7 @@ export function EditContentTypeForm({ contentType }: EditContentTypeFormProps) {
                             key={fieldIndex}
                             form={form}
                             fieldIndex={fieldIndex}
-                            fieldsArray={fieldsArray}
+                            onRemove={() => fieldsArray.removeValue(fieldIndex)}
                           />
                         ))}
                       </div>

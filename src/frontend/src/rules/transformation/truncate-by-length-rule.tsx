@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { registerTransformationRule } from "../../registry/transformation-rule-registry";
 
 registerTransformationRule("TruncateByLength", {
+  label: "Truncate by Length",
   supportedTypes: ["Text", "Richtext", "Markdown"],
   apply: (value, params) => {
     if (typeof value !== "string") return value;
@@ -25,7 +26,7 @@ registerTransformationRule("TruncateByLength", {
   ConfigComponent: TruncateByLengthConfig,
 });
 
-function TruncateByLengthConfig({ value, onChange }: { value: Record<string, unknown>; onChange: (v: Record<string, unknown>) => void }) {
+export function TruncateByLengthConfig({ value, onChange }: { value: Record<string, unknown>; onChange: (v: Record<string, unknown>) => void }) {
   return (
     <div className="flex gap-2 items-center">
       <Label>Max Length</Label>

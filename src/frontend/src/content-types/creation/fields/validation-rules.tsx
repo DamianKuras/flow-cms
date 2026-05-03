@@ -18,28 +18,51 @@ import type { ContentTypeCreateFormData } from "../../types";
 interface ValidationRulesSectionProps {
   form: any;
   fieldIndex: number;
+  fieldType: string;
+}
+
+function getAllowedValidations(fieldType: string) {
+  return listValidationRuleTypes().filter((ruleType) => {
+    const supported = getValidationRule(ruleType)?.supportedTypes;
+    return !supported || supported.includes(fieldType);
+  });
 }
 
 export function ValidationRulesSection({
   form,
   fieldIndex,
+  fieldType,
 }: ValidationRulesSectionProps) {
+  const available = getAllowedValidations(fieldType);
+
+  if (available.length === 0) {
+    return (
+      <div className="space-y-4 border-4 p-6 rounded-md">
+        <Label>Validation Rules</Label>
+        <p className="text-sm text-slate-500">
+          No available validation rules for this type yet.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <form.Field
       name={`fields[${fieldIndex}].validationRules`}
       mode="array"
       children={(rulesForField: AnyFieldApi) => {
+        const usedTypes: string[] = rulesForField.state.value
+          .map((r: any) => r.type)
+          .filter((t: string) => t !== "");
+        const canAddMore = available.some((t) => !usedTypes.includes(t));
+
         return (
           <div className="space-y-4 border-4 p-6 rounded-md">
             <Label>Validation Rules</Label>
-            {rulesForField.state.value.length === 0 ? (
-              <p className="text-sm text-slate-500">
-                No validation rules added yet
-              </p>
-            ) : (
+            {rulesForField.state.value.length > 0 && (
               <div className="space-y-3">
                 {rulesForField.state.value.map((_: any, ruleIndex: number) => {
-                  const usedTypes: string[] = rulesForField.state.value
+                  const rowUsedTypes = rulesForField.state.value
                     .filter((_: any, i: number) => i !== ruleIndex)
                     .map((r: any) => r.type)
                     .filter((t: string) => t !== "");
@@ -50,37 +73,27 @@ export function ValidationRulesSection({
                       fieldIndex={fieldIndex}
                       ruleIndex={ruleIndex}
                       rulesForField={rulesForField}
-                      usedTypes={usedTypes}
+                      usedTypes={rowUsedTypes}
                     />
                   );
                 })}
               </div>
             )}
-
-            <Button
-              type="button"
-              onClick={() => {
-                rulesForField.pushValue({
-                  type: "",
-                  parameters: {},
-                });
-              }}
-            >
-              Add Validation rule
-            </Button>
+            {canAddMore && (
+              <Button
+                type="button"
+                onClick={() =>
+                  rulesForField.pushValue({ type: "", parameters: {} })
+                }
+              >
+                Add Validation rule
+              </Button>
+            )}
           </div>
         );
       }}
     />
   );
-}
-
-function getAllowedValidations(fieldType: string) {
-  return listValidationRuleTypes().filter((ruleType) => {
-    const plugin = getValidationRule(ruleType);
-    const supported = plugin?.supportedTypes;
-    return !supported || supported.includes(fieldType);
-  });
 }
 
 interface ValidationRuleRowProps {
@@ -105,6 +118,7 @@ function ValidationRuleRow({
   const allowedTypes = getAllowedValidations(currentFieldType).filter(
     (t) => !usedTypes.includes(t),
   );
+
   return (
     <form.Field
       name={`fields[${fieldIndex}].validationRules[${ruleIndex}].type`}
@@ -119,9 +133,7 @@ function ValidationRuleRow({
               <FieldLabel>Rule Type</FieldLabel>
               <Select
                 value={ruleType}
-                onValueChange={(v) => {
-                  field.handleChange(v);
-                }}
+                onValueChange={(v) => field.handleChange(v)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select rule type" />
@@ -129,7 +141,7 @@ function ValidationRuleRow({
                 <SelectContent>
                   {allowedTypes.map((type) => (
                     <SelectItem key={type} value={type}>
-                      {type}
+                      {getValidationRule(type)?.label ?? type}
                     </SelectItem>
                   ))}
                 </SelectContent>

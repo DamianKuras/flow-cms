@@ -30,6 +30,7 @@ export function useCreateContentType() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["content-types"] });
+      queryClient.invalidateQueries({ queryKey: ["content-type-summaries"] });
       toast.success("Content type created successfully!");
     },
     onError: (error: any) => {

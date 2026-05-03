@@ -31,7 +31,7 @@ function RouteComponent() {
   if (!summary?.draftId) {
     return (
       <div className="flex-1 p-6">
-        <Alert variant="destructive">
+        <Alert variant="destructive" data-testid="no-draft-alert">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>No Draft</AlertTitle>
           <AlertDescription>

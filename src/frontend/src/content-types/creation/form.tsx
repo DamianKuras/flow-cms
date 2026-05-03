@@ -131,7 +131,7 @@ export function CreateContentTypeForm() {
                             key={fieldIndex}
                             form={form}
                             fieldIndex={fieldIndex}
-                            fieldsArray={fieldsArray}
+                            onRemove={() => fieldsArray.removeValue(fieldIndex)}
                           />
                         ))}
                       </div>

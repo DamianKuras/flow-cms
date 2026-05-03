@@ -3,6 +3,7 @@ import { registerValidationRule } from "../../registry/validation-rule-registry"
 import { Input } from "@/components/ui/input";
 
 registerValidationRule("MinimumLengthValidationRule", {
+  label: "Minimum Length",
   supportedTypes: ["Text", "Richtext", "Markdown"],
   validate: (value, params) => {
     if (typeof value !== "string" || value.length < params["min-length"]) {

@@ -18,17 +18,44 @@ import type { ContentTypeCreateFormData } from "../../types";
 interface TransformationRulesSectionProps {
   form: any;
   fieldIndex: number;
+  fieldType: string;
+}
+
+function getAllowedTransformations(fieldType: string) {
+  return listTransformationRuleTypes().filter((ruleType) => {
+    const supported = getTransformationRule(ruleType)?.supportedTypes;
+    return !supported || supported.includes(fieldType);
+  });
 }
 
 export function TransformationRulesSection({
   form,
   fieldIndex,
+  fieldType,
 }: TransformationRulesSectionProps) {
+  const available = getAllowedTransformations(fieldType);
+
+  if (available.length === 0) {
+    return (
+      <div className="space-y-4 border-4 p-6 rounded-md">
+        <Label>Transformation Rules</Label>
+        <p className="text-sm text-slate-500">
+          No available transformation rules for this type yet.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <form.Field
       name={`fields[${fieldIndex}].transformationRules`}
       mode="array"
       children={(transformationsForField: AnyFieldApi) => {
+        const usedTypes: string[] = transformationsForField.state.value
+          .map((r: any) => r.type)
+          .filter((t: string) => t !== "");
+        const canAddMore = available.some((t) => !usedTypes.includes(t));
+
         return (
           <div className="space-y-4 border-4 p-6 rounded-md">
             <Label>Transformation Rules</Label>
@@ -36,7 +63,7 @@ export function TransformationRulesSection({
               <div className="space-y-3">
                 {transformationsForField.state.value.map(
                   (_: any, ruleIndex: number) => {
-                    const usedTypes: string[] = transformationsForField.state.value
+                    const rowUsedTypes = transformationsForField.state.value
                       .filter((_: any, i: number) => i !== ruleIndex)
                       .map((r: any) => r.type)
                       .filter((t: string) => t !== "");
@@ -47,35 +74,28 @@ export function TransformationRulesSection({
                         fieldIndex={fieldIndex}
                         ruleIndex={ruleIndex}
                         transformationsForField={transformationsForField}
-                        usedTypes={usedTypes}
+                        usedTypes={rowUsedTypes}
                       />
                     );
                   },
                 )}
               </div>
             )}
-
-            <Button
-              type="button"
-              onClick={() => {
-                transformationsForField.pushValue({ type: "", parameters: {} });
-              }}
-            >
-              Add transformation rule
-            </Button>
+            {canAddMore && (
+              <Button
+                type="button"
+                onClick={() =>
+                  transformationsForField.pushValue({ type: "", parameters: {} })
+                }
+              >
+                Add transformation rule
+              </Button>
+            )}
           </div>
         );
       }}
     />
   );
-}
-
-function getAllowedTransformations(fieldType: string) {
-  return listTransformationRuleTypes().filter((ruleType) => {
-    const plugin = getTransformationRule(ruleType);
-    const supported = plugin?.supportedTypes;
-    return !supported || supported.includes(fieldType);
-  });
 }
 
 interface TransformationRuleRowProps {
@@ -124,7 +144,7 @@ function TransformationRuleRow({
                 <SelectContent>
                   {allowedTypes.map((type) => (
                     <SelectItem key={type} value={type}>
-                      {type}
+                      {getTransformationRule(type)?.label ?? type}
                     </SelectItem>
                   ))}
                 </SelectContent>

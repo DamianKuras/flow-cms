@@ -13,6 +13,8 @@ import { ArrowLeft, Pencil, List, Plus, Upload, Loader2 } from "lucide-react";
 import { useState } from "react";
 import type { ContentTypeDto, FieldDto } from "@/hooks/use-content-type";
 import { useQueryClient } from "@tanstack/react-query";
+import { getValidationRule } from "@/registry/validation-rule-registry";
+import { getTransformationRule } from "@/registry/transformation-rule-registry";
 
 export const Route = createFileRoute("/_authenticated/content-types/$name/")({
   component: RouteComponent,
@@ -25,10 +27,20 @@ function FieldList({ fields }: { fields: FieldDto[] }) {
   return (
     <div className="space-y-2">
       {fields.map((f) => (
-        <div key={f.id} className="flex items-center gap-2 text-sm">
-          <span className="font-medium">{f.name}</span>
-          <Badge variant="outline" className="text-xs">{f.type}</Badge>
-          {f.isRequired && <Badge variant="secondary" className="text-xs">required</Badge>}
+        <div key={f.id} className="text-sm space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="font-medium">{f.name}</span>
+            <Badge variant="outline" className="text-xs">{f.type}</Badge>
+            {f.isRequired && <Badge variant="secondary" className="text-xs">required</Badge>}
+          </div>
+          {(f.validationRules ?? []).map((rule) => {
+            const Hint = getValidationRule(rule.type)?.HintComponent;
+            return Hint ? <Hint key={rule.type} params={rule.parameters ?? {}} /> : null;
+          })}
+          {(f.transformationRules ?? []).map((rule) => {
+            const Hint = getTransformationRule(rule.type)?.HintComponent;
+            return Hint ? <Hint key={rule.type} params={rule.parameters ?? {}} /> : null;
+          })}
         </div>
       ))}
     </div>
@@ -43,7 +55,7 @@ function PublishedCard({
   name: string;
 }) {
   return (
-    <Card>
+    <Card data-testid="published-card">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
@@ -101,7 +113,7 @@ function DraftCard({
 
   return (
     <>
-      <Card>
+      <Card data-testid="draft-card">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>

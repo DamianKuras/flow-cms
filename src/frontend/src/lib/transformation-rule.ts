@@ -1,4 +1,6 @@
 export interface TransformationRuleModule {
+  label?: string;
+
   /**
    * Which content field types this rule supports
    * e.g. ["Text","Richtext","Markdown"]

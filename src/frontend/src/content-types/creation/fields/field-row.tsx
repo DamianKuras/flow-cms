@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { AnyFieldApi } from "@tanstack/react-form";
+import { useStore, type AnyFieldApi } from "@tanstack/react-form";
 import { FIELD_TYPES } from "../../types";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -19,14 +19,16 @@ import { useTranslation } from "react-i18next";
 interface FieldRowProps {
   form: any;
   fieldIndex: number;
-  fieldsArray: AnyFieldApi;
+  onRemove: () => void;
 }
 
-export function FieldRow({ form, fieldIndex, fieldsArray }: FieldRowProps) {
+export function FieldRow({ form, fieldIndex, onRemove }: FieldRowProps) {
   const { t } = useTranslation();
+  const fieldType = useStore(form.store, (state: any) => state.values?.fields?.[fieldIndex]?.type ?? "");
   return (
     <div className="space-y-8 border-2 rounded-md p-4">
       <div className="space-y-2 flex justify-between">
+        {/* "fields" is the path key from form defaultValues*/}
         <form.Field
           name={`fields[${fieldIndex}].name`}
           children={(field: AnyFieldApi) => {
@@ -56,7 +58,7 @@ export function FieldRow({ form, fieldIndex, fieldsArray }: FieldRowProps) {
 
         <Button
           variant="destructive"
-          onClick={() => fieldsArray.removeValue(fieldIndex)}
+          onClick={onRemove}
         >
           {t("contentType.create.field.removeField")}
         </Button>
@@ -76,7 +78,11 @@ export function FieldRow({ form, fieldIndex, fieldsArray }: FieldRowProps) {
                 </FieldLabel>
                 <Select
                   value={field.state.value}
-                  onValueChange={(v) => field.handleChange(v)}
+                  onValueChange={(v) => {
+                    field.handleChange(v);
+                    form.setFieldValue(`fields[${fieldIndex}].validationRules`, []);
+                    form.setFieldValue(`fields[${fieldIndex}].transformationRules`, []);
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue
@@ -112,9 +118,12 @@ export function FieldRow({ form, fieldIndex, fieldsArray }: FieldRowProps) {
           </div>
         )}
       />
-
-      <ValidationRulesSection form={form} fieldIndex={fieldIndex} />
-      <TransformationRulesSection form={form} fieldIndex={fieldIndex} />
+      {fieldType !== "" && (
+        <>
+          <ValidationRulesSection form={form} fieldIndex={fieldIndex} fieldType={fieldType} />
+          <TransformationRulesSection form={form} fieldIndex={fieldIndex} fieldType={fieldType} />
+        </>
+      )}
     </div>
   );
 }
